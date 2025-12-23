@@ -2,10 +2,13 @@
 """
 Generate static JSON data from cloned legal code repositories.
 Uses git diff directly for fast diff computation.
+Strips metadata, handles HTML tags, and formats diffs by article.
 """
 
+import html
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -13,6 +16,74 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).parent.parent
 CODES_DIR = PROJECT_DIR / "codes"
 DATA_DIR = PROJECT_DIR / "data"
+
+# Metadata patterns to strip from diffs
+METADATA_PATTERNS = [
+    r'^Nature:\s*',
+    r'^Numéro:\s*',
+    r'^Type:\s*',
+    r'^État:\s*',
+    r'^Date de début:\s*',
+    r'^Date de fin:\s*',
+    r'^Identifiant:\s*',
+    r'^Ancien identifiant:\s*',
+    r'^URL:\s*',
+    r'^Origine:\s*',
+    r'^NOTA:\s*$',  # Just the header, keep content
+    r'^Liens relatifs à cet article\s*$',
+    r'^Cite:\s*$',
+    r'^Cité par:\s*$',
+    r'^Anciens textes:\s*$',
+    r'^Nouveaux textes:\s*$',
+]
+
+METADATA_REGEX = re.compile('|'.join(METADATA_PATTERNS), re.IGNORECASE)
+
+
+def is_metadata_line(content: str) -> bool:
+    """Check if a line is metadata that should be stripped."""
+    stripped = content.strip()
+    if not stripped:
+        return False
+    # Check against metadata patterns
+    if METADATA_REGEX.match(stripped):
+        return True
+    # Also match lines that are just identifiers like LEGIARTI000045137090
+    if re.match(r'^LEGI[A-Z]{4}\d{12}$', stripped):
+        return True
+    return False
+
+
+def html_to_text(content: str) -> str:
+    """Convert HTML content to plain text."""
+    if not content or '<' not in content:
+        return content
+
+    text = content
+
+    # Convert <br> and <br/> to newlines
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+
+    # Convert </p> to double newline (paragraph break)
+    text = re.sub(r'</p\s*>', '\n\n', text, flags=re.IGNORECASE)
+
+    # Remove <p> opening tags
+    text = re.sub(r'<p\s*[^>]*>', '', text, flags=re.IGNORECASE)
+
+    # Extract link text from <a> tags (keep the text, drop the href)
+    text = re.sub(r'<a\s+[^>]*>([^<]*)</a>', r'\1', text, flags=re.IGNORECASE)
+
+    # Remove all other HTML tags but keep their content
+    text = re.sub(r'<[^>]+>', '', text)
+
+    # Decode HTML entities (e.g., &amp; -> &, &lt; -> <)
+    text = html.unescape(text)
+
+    # Clean up excessive whitespace
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = text.strip()
+
+    return text
 
 
 def run_git(repo_path: Path, *args, timeout=30) -> str:
@@ -34,6 +105,30 @@ def format_code_name(name: str) -> str:
     """Format repository name for display."""
     display = name.replace("_", " ")
     return display[0].upper() + display[1:] if display else display
+
+
+def format_article_name(filename: str) -> str:
+    """Extract a readable article name from the filename."""
+    # Example: partie_legislative/livre_premier/.../article_l1234-5.md -> Article L1234-5
+    name = Path(filename).stem  # Get filename without extension
+
+    # Handle article files
+    if name.startswith("article_"):
+        article_id = name[8:]  # Remove 'article_'
+        # Format: l1234-5 -> L1234-5, r1234-5 -> R1234-5
+        article_id = article_id.upper().replace("_", " ")
+        return f"Article {article_id}"
+
+    # Handle README files
+    if name.lower() == "readme":
+        # Get parent folder name for context
+        parts = Path(filename).parts
+        if len(parts) > 1:
+            parent = parts[-2].replace("_", " ").title()
+            return f"Sommaire - {parent}"
+        return "Sommaire"
+
+    return name.replace("_", " ").title()
 
 
 def get_repos() -> list:
@@ -115,7 +210,7 @@ def get_commit_diff(repo_path: Path, sha: str) -> dict:
 
 
 def parse_unified_diff(diff_text: str, files_info: list) -> list:
-    """Parse unified diff output into structured format."""
+    """Parse unified diff output into structured format, filtering metadata."""
     file_diffs = []
     current_file = None
     current_diff = []
@@ -128,6 +223,7 @@ def parse_unified_diff(diff_text: str, files_info: list) -> list:
             if current_file:
                 file_diffs.append({
                     "filename": current_file,
+                    "articleName": format_article_name(current_file),
                     "additions": additions,
                     "deletions": deletions,
                     "diff": current_diff
@@ -141,21 +237,40 @@ def parse_unified_diff(diff_text: str, files_info: list) -> list:
             deletions = 0
 
         elif current_file and line.startswith("+") and not line.startswith("+++"):
+            content = line[1:]
+            # Skip metadata lines
+            if is_metadata_line(content):
+                continue
+            # Convert HTML to plain text
+            content = html_to_text(content)
             additions += 1
-            current_diff.append({"type": "add", "content": line[1:]})
+            current_diff.append({"type": "add", "content": content})
 
         elif current_file and line.startswith("-") and not line.startswith("---"):
+            content = line[1:]
+            # Skip metadata lines
+            if is_metadata_line(content):
+                continue
+            # Convert HTML to plain text
+            content = html_to_text(content)
             deletions += 1
-            current_diff.append({"type": "del", "content": line[1:]})
+            current_diff.append({"type": "del", "content": content})
 
         elif current_file and not line.startswith("@@") and not line.startswith("\\"):
             if line:
-                current_diff.append({"type": "unchanged", "content": line[1:] if line.startswith(" ") else line})
+                content = line[1:] if line.startswith(" ") else line
+                # Skip metadata lines in context too
+                if is_metadata_line(content):
+                    continue
+                # Convert HTML to plain text
+                content = html_to_text(content)
+                current_diff.append({"type": "unchanged", "content": content})
 
     # Save last file
     if current_file:
         file_diffs.append({
             "filename": current_file,
+            "articleName": format_article_name(current_file),
             "additions": additions,
             "deletions": deletions,
             "diff": current_diff
