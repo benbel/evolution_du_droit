@@ -131,6 +131,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const detail = await API.fetchCommitDetail(repoName, commit.sha);
 
+            const externalLink = detail.externalUrl
+                ? `<a href="${detail.externalUrl}" target="_blank" rel="noopener" class="external-link">Voir sur git.tricoteuses.fr ↗</a>`
+                : '';
+
             commitHeader.innerHTML = `
                 <h4>${escapeHtml(detail.message)}</h4>
                 <div class="commit-meta">
@@ -138,10 +142,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${detail.stats.filesChanged} fichier(s) •
                     <span class="stat-add">+${detail.stats.additions}</span>
                     <span class="stat-del">-${detail.stats.deletions}</span>
+                    ${externalLink}
                 </div>
             `;
 
             commitDiff.innerHTML = '';
+
+            // Handle CORS error - show message with external link
+            if (detail.corsError) {
+                commitDiff.innerHTML = `
+                    <div class="cors-notice">
+                        <p>Le chargement direct du diff n'est pas possible (restriction CORS).</p>
+                        <p><a href="${detail.externalUrl}" target="_blank" rel="noopener" class="btn-external">
+                            Voir les modifications sur git.tricoteuses.fr ↗
+                        </a></p>
+                    </div>
+                `;
+                return;
+            }
 
             if (!detail.files || detail.files.length === 0) {
                 commitDiff.innerHTML = '<div class="no-results"><p>Aucun changement.</p></div>';

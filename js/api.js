@@ -191,36 +191,58 @@ const API = (() => {
         }
 
         const fullSha = commit.fullSha || sha;
+        const commitUrl = `${FORGEJO_BASE}/${repoName}/commit/${fullSha}`;
 
-        // Fetch raw diff from Forgejo
-        const diffUrl = `${FORGEJO_BASE}/${repoName}/commit/${fullSha}.diff`;
-        const response = await fetch(diffUrl);
+        // Try to fetch raw diff from Forgejo
+        const diffUrl = `${commitUrl}.diff`;
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch diff: ${response.status}`);
-        }
+        try {
+            const response = await fetch(diffUrl);
 
-        const diffText = await response.text();
-        const files = parseUnifiedDiff(diffText);
-
-        // Calculate stats
-        const totalAdditions = files.reduce((sum, f) => sum + f.additions, 0);
-        const totalDeletions = files.reduce((sum, f) => sum + f.deletions, 0);
-
-        const detail = {
-            sha: commit.sha,
-            date: commit.date,
-            message: commit.message,
-            files,
-            stats: {
-                additions: totalAdditions,
-                deletions: totalDeletions,
-                filesChanged: files.length
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
             }
-        };
 
-        cache.set(cacheKey, detail);
-        return detail;
+            const diffText = await response.text();
+            const files = parseUnifiedDiff(diffText);
+
+            // Calculate stats
+            const totalAdditions = files.reduce((sum, f) => sum + f.additions, 0);
+            const totalDeletions = files.reduce((sum, f) => sum + f.deletions, 0);
+
+            const detail = {
+                sha: commit.sha,
+                date: commit.date,
+                message: commit.message,
+                files,
+                stats: {
+                    additions: totalAdditions,
+                    deletions: totalDeletions,
+                    filesChanged: files.length
+                },
+                externalUrl: commitUrl
+            };
+
+            cache.set(cacheKey, detail);
+            return detail;
+        } catch (err) {
+            // CORS or network error - return metadata with external link
+            const detail = {
+                sha: commit.sha,
+                date: commit.date,
+                message: commit.message,
+                files: [],
+                stats: {
+                    additions: 0,
+                    deletions: 0,
+                    filesChanged: commit.files || 0
+                },
+                externalUrl: commitUrl,
+                corsError: true
+            };
+            cache.set(cacheKey, detail);
+            return detail;
+        }
     }
 
     function formatCodeName(name) {
