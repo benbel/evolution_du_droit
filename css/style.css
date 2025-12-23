@@ -375,6 +375,12 @@ select:disabled {
     overflow: hidden;
 }
 
+.commit-files {
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+}
+
 .commit-detail {
     flex: 1;
     display: flex;

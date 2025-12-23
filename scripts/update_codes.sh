@@ -17,14 +17,24 @@ mkdir -p "$DATA_DIR"
 
 echo "=== Fetching repository list ==="
 
-# Fetch list of all repositories
-REPOS_JSON=$(curl -s "$API_URL/orgs/$ORG/repos?limit=200")
+# Fetch all repositories (paginated)
+REPO_NAMES=""
+PAGE=1
+while true; do
+    echo "Fetching page $PAGE..."
+    PAGE_JSON=$(curl -s "$API_URL/orgs/$ORG/repos?limit=50&page=$PAGE")
+    PAGE_REPOS=$(echo "$PAGE_JSON" | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
 
-# Extract repo names
-REPO_NAMES=$(echo "$REPOS_JSON" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | sort)
+    if [ -z "$PAGE_REPOS" ]; then
+        break
+    fi
 
-# Save repos list
-echo "$REPOS_JSON" > "$DATA_DIR/repos.json"
+    REPO_NAMES="$REPO_NAMES $PAGE_REPOS"
+    PAGE=$((PAGE + 1))
+done
+
+# Sort and dedupe
+REPO_NAMES=$(echo "$REPO_NAMES" | tr ' ' '\n' | sort -u | grep -v '^$')
 
 # Count repos
 REPO_COUNT=$(echo "$REPO_NAMES" | wc -l)
