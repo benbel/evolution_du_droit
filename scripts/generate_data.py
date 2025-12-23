@@ -147,8 +147,9 @@ def get_repos() -> list:
 
 
 def get_commits(repo_path: Path) -> list:
-    """Get all commits for a repository."""
-    log_output = run_git(repo_path, "log", "--format=%H|%aI|%s", "--all", timeout=60)
+    """Get all commits for a repository with file count."""
+    # Get commit info with numstat for file count
+    log_output = run_git(repo_path, "log", "--format=%H|%aI|%s", "--all", timeout=120)
 
     commits = []
     for line in log_output.split("\n"):
@@ -157,10 +158,16 @@ def get_commits(repo_path: Path) -> list:
         parts = line.split("|", 2)
         if len(parts) >= 3:
             sha, date_str, message = parts
+            # Get file count for this commit
+            files_output = run_git(repo_path, "diff-tree", "--no-commit-id", "-r", "--name-only", sha)
+            file_count = len([f for f in files_output.split("\n") if f.strip()])
+
             commits.append({
                 "sha": sha[:12],
+                "fullSha": sha,  # Keep full SHA for API requests
                 "date": date_str.split("T")[0],
-                "message": message[:300]
+                "message": message[:300],
+                "files": file_count
             })
 
     commits.sort(key=lambda x: x["date"], reverse=True)
@@ -285,13 +292,19 @@ def parse_unified_diff(diff_text: str, files_info: list) -> list:
 
 
 def main():
-    print("=== Generating static data ===")
+    print("=== Generating static data (metadata only) ===")
+    print("Commit details will be fetched on-demand from git.tricoteuses.fr")
 
     DATA_DIR.mkdir(exist_ok=True)
     commits_dir = DATA_DIR / "commits"
     commits_dir.mkdir(exist_ok=True)
+
+    # Clean up old details directory if it exists
     details_dir = DATA_DIR / "details"
-    details_dir.mkdir(exist_ok=True)
+    if details_dir.exists():
+        import shutil
+        shutil.rmtree(details_dir)
+        print("Removed old details/ directory (no longer needed)")
 
     repos = get_repos()
     print(f"Found {len(repos)} repositories")
@@ -305,6 +318,7 @@ def main():
         json.dump(repos, f, ensure_ascii=False, indent=2)
     print("Created data/repos.json")
 
+    total_commits = 0
     for idx, repo in enumerate(repos):
         repo_name = repo["name"]
         repo_path = CODES_DIR / repo_name
@@ -313,31 +327,18 @@ def main():
 
         commits = get_commits(repo_path)
         print(f"  {len(commits)} commits")
+        total_commits += len(commits)
 
         if not commits:
             continue
 
-        # Save commits index
+        # Save commits index (metadata only, no details)
         with open(commits_dir / f"{repo_name}.json", "w", encoding="utf-8") as f:
             json.dump(commits, f, ensure_ascii=False)
 
-        # Generate detailed data for recent commits only
-        repo_details_dir = details_dir / repo_name
-        repo_details_dir.mkdir(exist_ok=True)
-
-        recent = commits[:50]  # Only 50 most recent
-        for i, commit in enumerate(recent):
-            if (i + 1) % 10 == 0:
-                print(f"  Commit {i+1}/{len(recent)}...")
-
-            try:
-                detail = get_commit_diff(repo_path, commit["sha"])
-                with open(repo_details_dir / f"{commit['sha']}.json", "w", encoding="utf-8") as f:
-                    json.dump(detail, f, ensure_ascii=False)
-            except Exception as e:
-                print(f"  Error on {commit['sha']}: {e}")
-
-    print("\n=== Done! ===")
+    print(f"\n=== Done! ===")
+    print(f"Total: {total_commits} commits across {len(repos)} repositories")
+    print("Commit details will be loaded on-demand from git.tricoteuses.fr")
 
 
 if __name__ == "__main__":

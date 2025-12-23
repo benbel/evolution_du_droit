@@ -270,8 +270,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 currentCommits.forEach((commit, idx) => {
                     const li = document.createElement('li');
+                    const filesLabel = commit.files === 1 ? '1 fichier' : `${commit.files || '?'} fichiers`;
                     li.innerHTML = `
-                        <div class="commit-date">${formatDate(commit.date)}</div>
+                        <div class="commit-date">${formatDate(commit.date)} <span class="commit-files">(${filesLabel})</span></div>
                         <div class="commit-message">${escapeHtml(commit.message)}</div>
                     `;
                     li.addEventListener('click', () => {
