@@ -1,215 +1,309 @@
 /**
- * App Module - Main application entry point
+ * App - Simple viewer for pre-computed legal code changes
  */
 
-const App = (() => {
-    // Current state
-    let state = {
-        repositories: [],
-        currentCode: null,
-        commits: [],
-        changedFiles: [],
-        mode: 'before-after'
-    };
+document.addEventListener('DOMContentLoaded', async () => {
+    // DOM Elements
+    const codeSelect = document.getElementById('code-select');
+    const dateStart = document.getElementById('date-start');
+    const dateEnd = document.getElementById('date-end');
+    const btnCompare = document.getElementById('btn-compare');
+    const modeBeforeAfter = document.getElementById('mode-before-after');
+    const modeChanges = document.getElementById('mode-changes');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const errorMessage = document.getElementById('error-message');
+    const results = document.getElementById('results');
+    const viewBeforeAfter = document.getElementById('view-before-after');
+    const viewChanges = document.getElementById('view-changes');
+    const commitsList = document.getElementById('commits-list');
+    const commitHeader = document.getElementById('commit-header');
+    const commitDiff = document.getElementById('commit-diff');
+    const diffLeft = document.getElementById('diff-left');
+    const diffRight = document.getElementById('diff-right');
+    const labelDateStart = document.getElementById('label-date-start');
+    const labelDateEnd = document.getElementById('label-date-end');
 
-    /**
-     * Initialize the application
-     */
-    async function init() {
-        // Initialize UI
-        UI.init();
+    // State
+    let currentMode = 'changes';
+    let currentCommits = [];
 
-        // Setup event listeners
-        setupEventListeners();
+    // Set default dates
+    const today = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    dateEnd.value = today.toISOString().split('T')[0];
+    dateStart.value = oneMonthAgo.toISOString().split('T')[0];
 
-        // Load repositories
-        await loadRepositories();
-    }
-
-    /**
-     * Setup all event listeners
-     */
-    function setupEventListeners() {
-        const elements = UI.elements();
-
-        // Code selector change
-        elements.codeSelect.addEventListener('change', () => {
-            state.currentCode = elements.codeSelect.value;
-            UI.validateForm();
-        });
-
-        // Date inputs change
-        elements.dateStart.addEventListener('change', UI.validateForm);
-        elements.dateEnd.addEventListener('change', UI.validateForm);
-
-        // Compare button click
-        elements.btnCompare.addEventListener('click', handleCompare);
-
-        // Mode toggle
-        UI.setupModeToggle((mode) => {
-            state.mode = mode;
-            // If we have results, re-render them in the new mode
-            if (state.commits.length > 0) {
-                handleCompare();
-            }
+    // Format date for display
+    function formatDate(dateStr) {
+        return new Date(dateStr).toLocaleDateString('fr-FR', {
+            day: 'numeric', month: 'long', year: 'numeric'
         });
     }
 
-    /**
-     * Load available repositories
-     */
-    async function loadRepositories() {
+    // Show/hide loading
+    function showLoading() {
+        loading.classList.remove('hidden');
+        error.classList.add('hidden');
+        results.classList.add('hidden');
+    }
+
+    function hideLoading() {
+        loading.classList.add('hidden');
+    }
+
+    function showError(msg) {
+        errorMessage.textContent = msg;
+        error.classList.remove('hidden');
+        hideLoading();
+    }
+
+    // Validate form
+    function validateForm() {
+        const valid = codeSelect.value && dateStart.value && dateEnd.value && dateStart.value < dateEnd.value;
+        btnCompare.disabled = !valid;
+        return valid;
+    }
+
+    // Load repositories
+    try {
+        const repos = await API.fetchRepositories();
+        codeSelect.innerHTML = '<option value="">Sélectionnez un code...</option>';
+        repos.forEach(repo => {
+            const opt = document.createElement('option');
+            opt.value = repo.name;
+            opt.textContent = repo.displayName;
+            codeSelect.appendChild(opt);
+        });
+        codeSelect.disabled = false;
+    } catch (err) {
+        showError('Impossible de charger la liste des codes: ' + err.message);
+    }
+
+    // Event listeners
+    codeSelect.addEventListener('change', validateForm);
+    dateStart.addEventListener('change', validateForm);
+    dateEnd.addEventListener('change', validateForm);
+
+    modeBeforeAfter.addEventListener('click', () => {
+        currentMode = 'before-after';
+        modeBeforeAfter.classList.add('active');
+        modeChanges.classList.remove('active');
+    });
+
+    modeChanges.addEventListener('click', () => {
+        currentMode = 'changes';
+        modeChanges.classList.add('active');
+        modeBeforeAfter.classList.remove('active');
+    });
+
+    // Render diff lines (pre-computed)
+    function renderDiffLines(diffLines, container) {
+        container.innerHTML = '';
+        diffLines.forEach(line => {
+            const div = document.createElement('div');
+            div.className = `diff-line diff-line-${line.type}`;
+
+            const marker = document.createElement('span');
+            marker.className = 'diff-line-marker';
+            marker.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ';
+
+            const content = document.createElement('span');
+            content.className = 'diff-line-content';
+            content.textContent = line.content;
+
+            div.appendChild(marker);
+            div.appendChild(content);
+            container.appendChild(div);
+        });
+    }
+
+    // Render commit detail
+    async function renderCommitDetail(repoName, commit) {
         try {
-            state.repositories = await API.fetchRepositories();
-            UI.populateCodeSelector(state.repositories);
-        } catch (error) {
-            console.error('Error loading repositories:', error);
-            UI.showError('Impossible de charger la liste des codes. Veuillez rafraîchir la page.');
+            commitDiff.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            const detail = await API.fetchCommitDetail(repoName, commit.sha);
+
+            commitHeader.innerHTML = `
+                <h4>${escapeHtml(detail.message)}</h4>
+                <div class="commit-meta">
+                    ${formatDate(detail.date)} •
+                    ${detail.stats.filesChanged} fichier(s) •
+                    <span class="stat-add">+${detail.stats.additions}</span>
+                    <span class="stat-del">-${detail.stats.deletions}</span>
+                </div>
+            `;
+
+            commitDiff.innerHTML = '';
+
+            if (!detail.files || detail.files.length === 0) {
+                commitDiff.innerHTML = '<div class="no-results"><p>Aucun changement.</p></div>';
+                return;
+            }
+
+            detail.files.forEach(file => {
+                const header = document.createElement('div');
+                header.className = 'diff-file-header';
+                header.innerHTML = `
+                    <span class="file-name">${escapeHtml(file.filename)}</span>
+                    <span class="file-stats">
+                        <span class="stat-add">+${file.additions}</span>
+                        <span class="stat-del">-${file.deletions}</span>
+                    </span>
+                `;
+                commitDiff.appendChild(header);
+
+                const diffContainer = document.createElement('div');
+                renderDiffLines(file.diff, diffContainer);
+                commitDiff.appendChild(diffContainer);
+            });
+
+        } catch (err) {
+            commitDiff.innerHTML = `<div class="error"><p>Erreur: ${escapeHtml(err.message)}</p></div>`;
         }
     }
 
-    /**
-     * Handle compare button click
-     */
-    async function handleCompare() {
-        const values = UI.getFormValues();
-
-        if (!UI.validateForm()) {
+    // Render side-by-side view from multiple commits
+    async function renderBeforeAfterView(repoName, commits) {
+        if (commits.length === 0) {
+            diffLeft.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
+            diffRight.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
             return;
         }
 
-        UI.showLoading();
+        // Aggregate all diffs
+        const leftLines = [];
+        const rightLines = [];
 
-        try {
-            if (values.mode === 'before-after') {
-                await loadBeforeAfterView(values.code, values.dateStart, values.dateEnd);
-            } else {
-                await loadChangesView(values.code, values.dateStart, values.dateEnd);
+        for (const commit of commits.slice(0, 10)) { // Limit to 10
+            try {
+                const detail = await API.fetchCommitDetail(repoName, commit.sha);
+                for (const file of detail.files || []) {
+                    leftLines.push({ type: 'unchanged', content: `=== ${file.filename} ===` });
+                    rightLines.push({ type: 'unchanged', content: `=== ${file.filename} ===` });
+
+                    for (const line of file.diff || []) {
+                        if (line.type === 'del') {
+                            leftLines.push(line);
+                            rightLines.push({ type: 'empty', content: '' });
+                        } else if (line.type === 'add') {
+                            leftLines.push({ type: 'empty', content: '' });
+                            rightLines.push(line);
+                        } else {
+                            leftLines.push(line);
+                            rightLines.push(line);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading commit:', e);
             }
-        } catch (error) {
-            console.error('Error comparing:', error);
-            UI.showError(`Une erreur est survenue: ${error.message}`);
-        }
-    }
-
-    /**
-     * Load and display the before/after view
-     */
-    async function loadBeforeAfterView(code, startDate, endDate) {
-        // Get changes between dates to know which files were modified
-        const changes = await API.getChangesBetweenDates(code, startDate, endDate);
-        state.commits = changes.commits;
-        state.changedFiles = changes.files;
-
-        if (changes.files.length === 0) {
-            UI.hideLoading();
-            UI.showResults('before-after');
-            UI.updateDateLabels(startDate, endDate);
-            UI.showEmptyBeforeAfter('Aucune modification trouvée pour cette période.');
-            return;
         }
 
-        // Populate file selector
-        UI.populateFileSelector(changes.files, async (selectedFile) => {
-            await renderBeforeAfterForFile(code, startDate, endDate, selectedFile);
-        });
-
-        // Render the first file or all files combined
-        await renderBeforeAfterForFile(code, startDate, endDate, '');
-
-        UI.hideLoading();
-        UI.showResults('before-after');
-        UI.updateDateLabels(startDate, endDate);
+        renderDiffPane(leftLines, diffLeft);
+        renderDiffPane(rightLines, diffRight);
     }
 
-    /**
-     * Render before/after view for a specific file or all files
-     */
-    async function renderBeforeAfterForFile(code, startDate, endDate, selectedFile) {
-        UI.showLoading();
-
-        try {
-            let oldContent = '';
-            let newContent = '';
-
-            if (selectedFile) {
-                // Get content for specific file
-                oldContent = await API.getFileAtDate(code, selectedFile, startDate) || '';
-                newContent = await API.getFileAtDate(code, selectedFile, endDate) || '';
-            } else {
-                // Combine all changed files
-                const filesToShow = state.changedFiles.slice(0, 10); // Limit to 10 files to avoid performance issues
-
-                for (const file of filesToShow) {
-                    const oldFileContent = await API.getFileAtDate(code, file, startDate) || '';
-                    const newFileContent = await API.getFileAtDate(code, file, endDate) || '';
-
-                    const fileName = file.split('/').pop();
-                    const separator = `\n\n${'='.repeat(60)}\n📄 ${fileName}\n${'='.repeat(60)}\n\n`;
-
-                    oldContent += separator + oldFileContent;
-                    newContent += separator + newFileContent;
-                }
-
-                if (state.changedFiles.length > 10) {
-                    const note = `\n\n... et ${state.changedFiles.length - 10} autres fichiers.\nSélectionnez un fichier spécifique pour voir son contenu.`;
-                    oldContent += note;
-                    newContent += note;
-                }
+    function renderDiffPane(lines, container) {
+        container.innerHTML = '';
+        lines.forEach(line => {
+            const div = document.createElement('div');
+            div.className = `diff-line diff-line-${line.type}`;
+            if (line.type === 'empty') {
+                div.style.minHeight = '1.6em';
             }
 
-            UI.renderBeforeAfterView(oldContent, newContent);
-        } catch (error) {
-            console.error('Error rendering before/after:', error);
-            UI.showEmptyBeforeAfter('Erreur lors du chargement des fichiers.');
-        }
+            const marker = document.createElement('span');
+            marker.className = 'diff-line-marker';
+            marker.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ';
 
-        UI.hideLoading();
-    }
+            const content = document.createElement('span');
+            content.className = 'diff-line-content';
+            content.textContent = line.content;
 
-    /**
-     * Load and display the changes list view
-     */
-    async function loadChangesView(code, startDate, endDate) {
-        // Fetch commits in the date range
-        state.commits = await API.fetchCommits(code, startDate, endDate);
-
-        UI.hideLoading();
-        UI.showResults('changes');
-
-        // Render commits list with callback for selection
-        UI.renderCommitsList(state.commits, async (commit) => {
-            await loadCommitDetail(code, commit);
+            div.appendChild(marker);
+            div.appendChild(content);
+            container.appendChild(div);
         });
     }
 
-    /**
-     * Load and display commit detail
-     */
-    async function loadCommitDetail(code, commit) {
-        try {
-            // Show loading in the detail pane
-            const elements = UI.elements();
-            elements.commitDiff.innerHTML = '<div class="loading"><div class="spinner"></div><p>Chargement...</p></div>';
-
-            // Fetch commit diff
-            const fileDiffs = await API.getCommitDiff(code, commit.sha);
-
-            // Render the commit detail
-            UI.renderCommitDetail(commit, fileDiffs);
-        } catch (error) {
-            console.error('Error loading commit detail:', error);
-            UI.renderCommitDetail(commit, []);
-        }
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
-    // Public API
-    return {
-        init
-    };
-})();
+    // Compare button click
+    btnCompare.addEventListener('click', async () => {
+        if (!validateForm()) return;
 
-// Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    App.init();
+        const repoName = codeSelect.value;
+        const since = dateStart.value;
+        const until = dateEnd.value;
+
+        showLoading();
+
+        try {
+            currentCommits = await API.fetchCommits(repoName, since, until);
+            hideLoading();
+            results.classList.remove('hidden');
+
+            if (currentMode === 'changes') {
+                viewChanges.classList.remove('hidden');
+                viewBeforeAfter.classList.add('hidden');
+
+                commitsList.innerHTML = '';
+
+                if (currentCommits.length === 0) {
+                    commitsList.innerHTML = '<li class="no-results"><p>Aucune modification.</p></li>';
+                    commitHeader.innerHTML = '<p class="placeholder">Aucune modification trouvée.</p>';
+                    commitDiff.innerHTML = '';
+                    return;
+                }
+
+                currentCommits.forEach((commit, idx) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="commit-date">${formatDate(commit.date)}</div>
+                        <div class="commit-message">${escapeHtml(commit.message)}</div>
+                    `;
+                    li.addEventListener('click', () => {
+                        commitsList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
+                        li.classList.add('active');
+                        renderCommitDetail(repoName, commit);
+                    });
+                    commitsList.appendChild(li);
+
+                    if (idx === 0) li.click();
+                });
+
+            } else {
+                viewBeforeAfter.classList.remove('hidden');
+                viewChanges.classList.add('hidden');
+                labelDateStart.textContent = formatDate(since);
+                labelDateEnd.textContent = formatDate(until);
+                await renderBeforeAfterView(repoName, currentCommits);
+            }
+
+        } catch (err) {
+            showError('Erreur: ' + err.message);
+        }
+    });
+
+    // Scroll sync for side-by-side view
+    let syncing = false;
+    diffLeft.addEventListener('scroll', () => {
+        if (syncing) return;
+        syncing = true;
+        diffRight.scrollTop = diffLeft.scrollTop;
+        setTimeout(() => syncing = false, 10);
+    });
+    diffRight.addEventListener('scroll', () => {
+        if (syncing) return;
+        syncing = true;
+        diffLeft.scrollTop = diffRight.scrollTop;
+        setTimeout(() => syncing = false, 10);
+    });
 });
