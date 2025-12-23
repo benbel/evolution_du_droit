@@ -78,7 +78,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         codeSelect.disabled = false;
     } catch (err) {
-        showError('Impossible de charger la liste des codes: ' + err.message);
+        console.error('Error loading repos:', err);
+        if (window.location.protocol === 'file:') {
+            showError('Pour tester localement, lancez un serveur HTTP: python3 -m http.server 8000');
+        } else {
+            showError('Impossible de charger la liste des codes: ' + err.message);
+        }
     }
 
     // Event listeners
