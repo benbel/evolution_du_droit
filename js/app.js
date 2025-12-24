@@ -148,19 +148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             commitDiff.innerHTML = '';
 
-            // Handle CORS error - show message with external link
-            if (detail.corsError) {
-                commitDiff.innerHTML = `
-                    <div class="cors-notice">
-                        <p>Le chargement direct du diff n'est pas possible (restriction CORS).</p>
-                        <p><a href="${detail.externalUrl}" target="_blank" rel="noopener" class="btn-external">
-                            Voir les modifications sur git.tricoteuses.fr ↗
-                        </a></p>
-                    </div>
-                `;
-                return;
-            }
-
             if (!detail.files || detail.files.length === 0) {
                 commitDiff.innerHTML = '<div class="no-results"><p>Aucun changement.</p></div>';
                 return;
