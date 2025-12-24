@@ -5,6 +5,7 @@ Uses git diff directly for fast diff computation.
 Strips metadata, handles HTML tags, and formats diffs by article.
 """
 
+import gzip
 import html
 import json
 import os
@@ -345,7 +346,7 @@ def main():
 
         for i, commit in enumerate(commits):
             sha = commit["fullSha"]
-            detail_file = repo_details_dir / f"{sha[:12]}.json"
+            detail_file = repo_details_dir / f"{sha[:12]}.json.gz"
 
             # Skip if already generated
             if detail_file.exists():
@@ -354,9 +355,10 @@ def main():
 
             try:
                 detail = get_commit_diff(repo_path, sha)
-                # Save compact JSON (no indentation, minimal separators)
-                with open(detail_file, "w", encoding="utf-8") as f:
-                    json.dump(detail, f, ensure_ascii=False, separators=(',', ':'))
+                # Save as gzip-compressed JSON
+                json_bytes = json.dumps(detail, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+                with gzip.open(detail_file, 'wb') as f:
+                    f.write(json_bytes)
                 total_details += 1
 
                 if (i + 1) % 100 == 0:
