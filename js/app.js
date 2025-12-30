@@ -131,6 +131,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const detail = await API.fetchCommitDetail(repoName, commit.sha);
 
+            const externalLink = detail.externalUrl
+                ? `<a href="${detail.externalUrl}" target="_blank" rel="noopener" class="external-link">Voir sur git.tricoteuses.fr ↗</a>`
+                : '';
+
             commitHeader.innerHTML = `
                 <h4>${escapeHtml(detail.message)}</h4>
                 <div class="commit-meta">
@@ -138,6 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${detail.stats.filesChanged} fichier(s) •
                     <span class="stat-add">+${detail.stats.additions}</span>
                     <span class="stat-del">-${detail.stats.deletions}</span>
+                    ${externalLink}
                 </div>
             `;
 

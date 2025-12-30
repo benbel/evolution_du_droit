@@ -5,6 +5,7 @@ Uses git diff directly for fast diff computation.
 Strips metadata, handles HTML tags, and formats diffs by article.
 """
 
+import gzip
 import html
 import json
 import os
@@ -216,8 +217,14 @@ def get_commit_diff(repo_path: Path, sha: str) -> dict:
     }
 
 
-def parse_unified_diff(diff_text: str, files_info: list) -> list:
-    """Parse unified diff output into structured format, filtering metadata."""
+def parse_unified_diff(diff_text: str, files_info: list, include_context: bool = False) -> list:
+    """Parse unified diff output into structured format, filtering metadata.
+
+    Args:
+        diff_text: Raw unified diff output
+        files_info: List of file info dicts with status
+        include_context: If False, skip unchanged lines to save space
+    """
     file_diffs = []
     current_file = None
     current_diff = []
@@ -263,7 +270,8 @@ def parse_unified_diff(diff_text: str, files_info: list) -> list:
             deletions += 1
             current_diff.append({"type": "del", "content": content})
 
-        elif current_file and not line.startswith("@@") and not line.startswith("\\"):
+        elif include_context and current_file and not line.startswith("@@") and not line.startswith("\\"):
+            # Only include context lines if requested (saves significant space)
             if line:
                 content = line[1:] if line.startswith(" ") else line
                 # Skip metadata lines in context too
@@ -292,19 +300,14 @@ def parse_unified_diff(diff_text: str, files_info: list) -> list:
 
 
 def main():
-    print("=== Generating static data (metadata only) ===")
-    print("Commit details will be fetched on-demand from git.tricoteuses.fr")
+    print("=== Generating static data with pre-computed diffs ===")
+    print("Optimized: no context lines, compact JSON, metadata stripped")
 
     DATA_DIR.mkdir(exist_ok=True)
     commits_dir = DATA_DIR / "commits"
     commits_dir.mkdir(exist_ok=True)
-
-    # Clean up old details directory if it exists
     details_dir = DATA_DIR / "details"
-    if details_dir.exists():
-        import shutil
-        shutil.rmtree(details_dir)
-        print("Removed old details/ directory (no longer needed)")
+    details_dir.mkdir(exist_ok=True)
 
     repos = get_repos()
     print(f"Found {len(repos)} repositories")
@@ -319,6 +322,7 @@ def main():
     print("Created data/repos.json")
 
     total_commits = 0
+    total_details = 0
     for idx, repo in enumerate(repos):
         repo_name = repo["name"]
         repo_path = CODES_DIR / repo_name
@@ -332,13 +336,41 @@ def main():
         if not commits:
             continue
 
-        # Save commits index (metadata only, no details)
+        # Save commits index (compact JSON)
         with open(commits_dir / f"{repo_name}.json", "w", encoding="utf-8") as f:
-            json.dump(commits, f, ensure_ascii=False)
+            json.dump(commits, f, ensure_ascii=False, separators=(',', ':'))
+
+        # Generate details for each commit
+        repo_details_dir = details_dir / repo_name
+        repo_details_dir.mkdir(exist_ok=True)
+
+        for i, commit in enumerate(commits):
+            sha = commit["fullSha"]
+            detail_file = repo_details_dir / f"{sha[:12]}.json.gz"
+
+            # Skip if already generated
+            if detail_file.exists():
+                total_details += 1
+                continue
+
+            try:
+                detail = get_commit_diff(repo_path, sha)
+                # Save as gzip-compressed JSON
+                json_bytes = json.dumps(detail, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+                with gzip.open(detail_file, 'wb') as f:
+                    f.write(json_bytes)
+                total_details += 1
+
+                if (i + 1) % 100 == 0:
+                    print(f"    {i+1}/{len(commits)} commits processed")
+            except Exception as e:
+                print(f"  Warning: Failed to get diff for {sha[:12]}: {e}")
+
+        print(f"  Generated {len(commits)} detail files")
 
     print(f"\n=== Done! ===")
-    print(f"Total: {total_commits} commits across {len(repos)} repositories")
-    print("Commit details will be loaded on-demand from git.tricoteuses.fr")
+    print(f"Total: {total_commits} commits, {total_details} detail files")
+    print(f"Data stored in {DATA_DIR}")
 
 
 if __name__ == "__main__":
