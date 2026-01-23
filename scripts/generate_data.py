@@ -219,9 +219,9 @@ def get_commits(repo_path: Path) -> list:
         parts = line.split("|", 2)
         if len(parts) >= 3:
             sha, date_str, message = parts
-            # Get file count for this commit
+            # Get file count for this commit (exclude README.md files)
             files_output = run_git(repo_path, "diff-tree", "--no-commit-id", "-r", "--name-only", sha)
-            file_count = len([f for f in files_output.split("\n") if f.strip()])
+            file_count = len([f for f in files_output.split("\n") if f.strip() and not f.lower().endswith("readme.md")])
 
             commits.append({
                 "sha": sha[:12],
@@ -257,8 +257,8 @@ def get_commit_diff(repo_path: Path, sha: str) -> dict:
     # Get unified diff
     diff_output = run_git(repo_path, "diff", f"{sha}^..{sha}", "--", timeout=60)
 
-    # Parse diff into structured format
-    file_diffs = parse_unified_diff(diff_output, files)
+    # Parse diff into structured format (include full context for before/after view)
+    file_diffs = parse_unified_diff(diff_output, files, include_context=True)
 
     # Calculate stats
     total_add = sum(f.get("additions", 0) for f in file_diffs)
@@ -283,7 +283,7 @@ def should_skip_content(content: str) -> bool:
     if not stripped:
         return False
 
-    # Skip reference sections
+    # Skip reference section headers
     if stripped in ["Références", "Autres formats"]:
         return True
 
@@ -292,6 +292,37 @@ def should_skip_content(content: str) -> bool:
         return True
     if stripped.startswith("## Références") or stripped.startswith("## Autres formats"):
         return True
+
+    # Skip file format bullets
+    if stripped.startswith("* JSON dans git") or stripped.startswith("* Références JSON dans git"):
+        return True
+    if stripped.startswith("* Markdown dans git") or stripped.startswith("* Légifrance"):
+        return True
+
+    # Skip reference content with legal status keywords
+    # Pattern: contains AUTONOME, VIGUEUR, MODIFIE, CITATION, CREE followed by "cible" or "source"
+    if any(keyword in stripped for keyword in ["AUTONOME ", "VIGUEUR,", "MODIFIE,", "CITATION ", "CREE "]):
+        if " cible" in stripped or " source" in stripped:
+            return True
+
+    # Skip date-based references (YYYY-MM-DD followed by CREE/MODIFIE/CITATION)
+    if re.match(r'^\d{4}-\d{2}-\d{2}\s+(CREE|MODIFIE|CITATION)', stripped):
+        return True
+
+    # Skip special date references
+    if re.match(r'^\s*\d{4}-\d{2}-\d{2}\s+(cible|source)', stripped):
+        return True
+
+    # Skip lines that look like article references
+    # Pattern: "Code de ... - article ..." with status keywords
+    if stripped.startswith("Code de ") or stripped.startswith("Code général"):
+        if any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "en vigueur"]):
+            return True
+
+    # Skip decree/law references in citation format
+    if any(stripped.startswith(prefix) for prefix in ["Décret n°", "Ordonnance n°", "LOI n°", "Loi n°"]):
+        if " - article " in stripped and any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CREE"]):
+            return True
 
     return False
 
@@ -401,6 +432,23 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
     files_dict = {f["filename"]: f["status"] for f in files_info}
     for fd in file_diffs:
         fd["status"] = files_dict.get(fd["filename"], "modified")
+
+    # Collapse multiple consecutive empty lines into one for each file
+    for fd in file_diffs:
+        collapsed_diff = []
+        last_was_empty = False
+
+        for line in fd["diff"]:
+            is_empty = not line.get("content", "").strip()
+
+            if is_empty and last_was_empty:
+                # Skip this empty line
+                continue
+
+            collapsed_diff.append(line)
+            last_was_empty = is_empty
+
+        fd["diff"] = collapsed_diff
 
     return file_diffs
 

@@ -433,21 +433,24 @@ select:disabled {
     border-top: none;
 }
 
-/* File separator for before/after view */
-.diff-file-separator {
+/* Article title for before/after view */
+.article-title {
     background: var(--color-bg-secondary);
     padding: var(--spacing-md);
     text-align: center;
     font-weight: 600;
     font-size: 0.95rem;
     border-top: 2px solid var(--color-border);
-    border-bottom: 2px solid var(--color-border);
-    margin: var(--spacing-md) 0;
+    border-bottom: 1px solid var(--color-border);
     color: var(--color-text);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-.diff-file-separator:first-child {
-    margin-top: 0;
+.article-diff-section {
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: var(--spacing-sm);
 }
 
 /* File selector */
