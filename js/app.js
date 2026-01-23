@@ -204,50 +204,128 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Aggregate all diffs
-        const leftLines = [];
-        const rightLines = [];
+        // Aggregate all files from commits
+        const allFiles = [];
 
         for (const commit of commits.slice(0, 10)) { // Limit to 10
             try {
                 const detail = await API.fetchCommitDetail(repoName, commit.sha);
                 for (const file of detail.files || []) {
-                    // Add file separator with formatted title
-                    leftLines.push({ type: 'separator', content: file.articleName || file.filename });
-                    rightLines.push({ type: 'separator', content: file.articleName || file.filename });
-
-                    for (const line of file.diff || []) {
-                        // Skip reference sections
-                        if (shouldSkipLine(line.content)) {
-                            continue;
-                        }
-
-                        if (line.type === 'del') {
-                            leftLines.push(line);
-                            rightLines.push({ type: 'empty', content: '' });
-                        } else if (line.type === 'add') {
-                            leftLines.push({ type: 'empty', content: '' });
-                            rightLines.push(line);
-                        } else {
-                            leftLines.push(line);
-                            rightLines.push(line);
-                        }
-                    }
+                    allFiles.push(file);
                 }
             } catch (e) {
                 console.error('Error loading commit:', e);
             }
         }
 
-        renderDiffPane(leftLines, diffLeft);
-        renderDiffPane(rightLines, diffRight);
+        // Render each file as a separate table
+        renderBeforeAfterTables(allFiles, diffLeft, diffRight);
+    }
+
+    function renderBeforeAfterTables(files, leftContainer, rightContainer) {
+        leftContainer.innerHTML = '';
+        rightContainer.innerHTML = '';
+
+        if (files.length === 0) {
+            leftContainer.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
+            rightContainer.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
+            return;
+        }
+
+        files.forEach((file, fileIndex) => {
+            // Create article title section (spans both columns)
+            const titleLeft = document.createElement('div');
+            titleLeft.className = 'article-title';
+            titleLeft.innerHTML = `<strong>${escapeHtml(file.articleName || file.filename)}</strong>`;
+
+            const titleRight = document.createElement('div');
+            titleRight.className = 'article-title';
+            titleRight.innerHTML = `<strong>${escapeHtml(file.articleName || file.filename)}</strong>`;
+
+            leftContainer.appendChild(titleLeft);
+            rightContainer.appendChild(titleRight);
+
+            // Process diff lines for before/after complete view
+            // BEFORE: unchanged + del (with del in red)
+            // AFTER: unchanged + add (with add in green)
+            const leftLines = [];
+            const rightLines = [];
+
+            for (const line of file.diff || []) {
+                // Skip reference sections
+                if (shouldSkipLine(line.content)) {
+                    continue;
+                }
+
+                if (line.type === 'del') {
+                    // Show deletion in BEFORE (left) only
+                    leftLines.push(line);
+                } else if (line.type === 'add') {
+                    // Show addition in AFTER (right) only
+                    rightLines.push(line);
+                } else {
+                    // Show unchanged in both
+                    leftLines.push(line);
+                    rightLines.push(line);
+                }
+            }
+
+            // Render diff lines for this file (no markers in before/after view)
+            const leftDiffSection = document.createElement('div');
+            leftDiffSection.className = 'article-diff-section';
+            renderDiffLinesInContainer(leftLines, leftDiffSection, false);
+            leftContainer.appendChild(leftDiffSection);
+
+            const rightDiffSection = document.createElement('div');
+            rightDiffSection.className = 'article-diff-section';
+            renderDiffLinesInContainer(rightLines, rightDiffSection, false);
+            rightContainer.appendChild(rightDiffSection);
+        });
+    }
+
+    function renderDiffLinesInContainer(lines, container, showMarkers = true) {
+        // Collapse multiple consecutive empty lines into one
+        const collapsedLines = [];
+        let lastWasEmpty = false;
+
+        for (const line of lines) {
+            const isEmpty = !line.content || line.content.trim() === '';
+
+            if (isEmpty && lastWasEmpty) {
+                // Skip this empty line, we already have one
+                continue;
+            }
+
+            collapsedLines.push(line);
+            lastWasEmpty = isEmpty;
+        }
+
+        // Render lines
+        collapsedLines.forEach(line => {
+            const div = document.createElement('div');
+            div.className = `diff-line diff-line-${line.type}`;
+
+            if (showMarkers) {
+                const marker = document.createElement('span');
+                marker.className = 'diff-line-marker';
+                marker.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ';
+                div.appendChild(marker);
+            }
+
+            const content = document.createElement('span');
+            content.className = 'diff-line-content';
+            content.innerHTML = renderMarkdown(line.content || '');
+
+            div.appendChild(content);
+            container.appendChild(div);
+        });
     }
 
     function shouldSkipLine(content) {
         if (!content) return false;
         const trimmed = content.trim();
 
-        // Skip reference sections
+        // Skip reference section headers
         if (trimmed === 'Références' || trimmed === 'Autres formats') {
             return true;
         }
@@ -258,40 +336,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             return true;
         }
 
+        // Skip file format bullets
+        if (trimmed.startsWith('* JSON dans git') || trimmed.startsWith('* Références JSON dans git')) {
+            return true;
+        }
+        if (trimmed.startsWith('* Markdown dans git') || trimmed.startsWith('* Légifrance')) {
+            return true;
+        }
+
+        // Skip reference content with legal status keywords
+        if (/AUTONOME |VIGUEUR,|MODIFIE,|CITATION |CREE /.test(trimmed)) {
+            if (trimmed.includes(' cible') || trimmed.includes(' source')) {
+                return true;
+            }
+        }
+
+        // Skip date-based references
+        if (/^\d{4}-\d{2}-\d{2}\s+(CREE|MODIFIE|CITATION)/.test(trimmed)) {
+            return true;
+        }
+
+        // Skip special date references
+        if (/^\s*\d{4}-\d{2}-\d{2}\s+(cible|source)/.test(trimmed)) {
+            return true;
+        }
+
+        // Skip article references
+        if (trimmed.startsWith('Code de ') || trimmed.startsWith('Code général')) {
+            if (/AUTONOME|VIGUEUR|MODIFIE|en vigueur/.test(trimmed)) {
+                return true;
+            }
+        }
+
+        // Skip decree/law references
+        if (/^(Décret n°|Ordonnance n°|LOI n°|Loi n°)/.test(trimmed)) {
+            if (trimmed.includes(' - article ') && /AUTONOME|VIGUEUR|MODIFIE|CREE/.test(trimmed)) {
+                return true;
+            }
+        }
+
         return false;
     }
 
-    function renderDiffPane(lines, container) {
-        container.innerHTML = '';
-        lines.forEach(line => {
-            const div = document.createElement('div');
-
-            // Handle separator lines
-            if (line.type === 'separator') {
-                div.className = 'diff-file-separator';
-                div.innerHTML = `<strong>${escapeHtml(line.content)}</strong>`;
-                container.appendChild(div);
-                return;
-            }
-
-            div.className = `diff-line diff-line-${line.type}`;
-            if (line.type === 'empty') {
-                div.style.minHeight = '1.6em';
-            }
-
-            const marker = document.createElement('span');
-            marker.className = 'diff-line-marker';
-            marker.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ';
-
-            const content = document.createElement('span');
-            content.className = 'diff-line-content';
-            content.innerHTML = renderMarkdown(line.content || '');
-
-            div.appendChild(marker);
-            div.appendChild(content);
-            container.appendChild(div);
-        });
-    }
 
     function renderMarkdown(text) {
         if (!text) return '';
