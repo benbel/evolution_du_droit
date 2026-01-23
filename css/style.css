@@ -202,6 +202,24 @@ select:disabled {
     cursor: not-allowed;
 }
 
+/* Secondary button */
+.btn-secondary {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: white;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
 /* Loading */
 .loading {
     text-align: center;
@@ -686,4 +704,85 @@ footer a:hover {
 
 .external-link:hover {
     text-decoration: underline;
+}
+
+/* Print styles */
+@media print {
+    /* Hide UI elements */
+    header,
+    .controls,
+    #loading,
+    #error,
+    .btn-primary,
+    .btn-secondary,
+    .mode-toggle-container,
+    .commits-list {
+        display: none !important;
+    }
+
+    /* Optimize page layout */
+    body {
+        background: white;
+        margin: 0;
+        padding: 0;
+    }
+
+    main {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .results {
+        border: none;
+        border-radius: 0;
+    }
+
+    /* Print before/after view */
+    .before-after-sticky-header {
+        position: static;
+        page-break-after: avoid;
+    }
+
+    .before-after-table {
+        page-break-inside: auto;
+    }
+
+    .before-after-table thead th {
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .before-after-table tbody tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    /* Print changes list view */
+    .commit-header {
+        page-break-after: avoid;
+    }
+
+    .diff-file-header {
+        page-break-after: avoid;
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Print colors */
+    .diff-line-add,
+    .before-after-table tbody td.diff-line-add {
+        background: #e8f5e9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .diff-line-del,
+    .before-after-table tbody td.diff-line-del {
+        background: #ffebee !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
 }

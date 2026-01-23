@@ -8,6 +8,7 @@ window.addEventListener('load', async () => {
     const dateStart = document.getElementById('date-start');
     const dateEnd = document.getElementById('date-end');
     const btnCompare = document.getElementById('btn-compare');
+    const btnPrint = document.getElementById('btn-print');
     const modeToggleContainer = document.getElementById('mode-toggle-container');
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
@@ -138,6 +139,11 @@ window.addEventListener('load', async () => {
     // Compare button click
     btnCompare.addEventListener('click', performComparison);
 
+    // Print button click
+    btnPrint.addEventListener('click', () => {
+        window.print();
+    });
+
     // Render diff lines (pre-computed)
     function renderDiffLines(diffLines, container) {
         container.innerHTML = '';
@@ -212,8 +218,15 @@ window.addEventListener('load', async () => {
             detail.files.forEach(file => {
                 const header = document.createElement('div');
                 header.className = 'diff-file-header';
+
+                let fileName = escapeHtml(file.articleName || file.filename);
+                if (file.legifranceId) {
+                    const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}`;
+                    fileName += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+                }
+
                 header.innerHTML = `
-                    <span class="file-name">${escapeHtml(file.articleName || file.filename)}</span>
+                    <span class="file-name">${fileName}</span>
                     <span class="file-stats">
                         <span class="stat-add">+${file.additions}</span>
                         <span class="stat-del">-${file.deletions}</span>
@@ -286,11 +299,18 @@ window.addEventListener('load', async () => {
             // Create header with article title spanning both columns
             const thead = document.createElement('thead');
 
-            // Title row (only article name, no dates)
+            // Title row (with Légifrance link if available)
             const titleRow = document.createElement('tr');
             const titleCell = document.createElement('th');
             titleCell.colSpan = 2;
-            titleCell.innerHTML = escapeHtml(file.articleName || file.filename);
+
+            let titleHTML = escapeHtml(file.articleName || file.filename);
+            if (file.legifranceId) {
+                const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}`;
+                titleHTML += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+            }
+
+            titleCell.innerHTML = titleHTML;
             titleCell.style.textAlign = 'center';
             titleCell.style.fontSize = '1.1em';
             titleCell.style.padding = '0.75em';
@@ -561,6 +581,7 @@ window.addEventListener('load', async () => {
     // Refresh view based on current mode
     async function refreshView() {
         results.classList.remove('hidden');
+        btnPrint.classList.remove('hidden');
 
         if (currentMode === 'changes') {
             viewChanges.classList.remove('hidden');

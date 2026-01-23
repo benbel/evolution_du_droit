@@ -102,6 +102,32 @@ def run_git(repo_path: Path, *args, timeout=30) -> str:
         return ""
 
 
+def extract_legifrance_id(repo_path: Path, sha: str, filename: str) -> str:
+    """Extract Légifrance ID from article file frontmatter."""
+    try:
+        # Get file content at this commit
+        content = run_git(repo_path, "show", f"{sha}:{filename}")
+        if not content:
+            return ""
+
+        # Parse YAML frontmatter
+        lines = content.split('\n')
+        in_frontmatter = False
+        for line in lines:
+            if line.strip() == '---':
+                if not in_frontmatter:
+                    in_frontmatter = True
+                else:
+                    break  # End of frontmatter
+            elif in_frontmatter:
+                if line.startswith('Identifiant:'):
+                    legifrance_id = line.split(':', 1)[1].strip()
+                    return legifrance_id
+        return ""
+    except Exception:
+        return ""
+
+
 def format_code_name(name: str) -> str:
     """Format repository name for display."""
     display = name.replace("_", " ")
@@ -193,16 +219,29 @@ def format_path_part(part: str) -> str:
 
 
 def get_repos() -> list:
-    """Get list of all repositories."""
+    """Get list of all repositories with real names from README.md."""
     repos = []
     if not CODES_DIR.exists():
         return repos
 
     for item in sorted(CODES_DIR.iterdir()):
         if item.is_dir() and (item / ".git").exists():
+            # Try to extract real title from README.md
+            display_name = format_code_name(item.name)  # fallback
+            readme_path = item / "README.md"
+            if readme_path.exists():
+                try:
+                    with open(readme_path, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            if line.startswith('# '):
+                                display_name = line[2:].strip()
+                                break
+                except Exception:
+                    pass  # Use fallback if reading fails
+
             repos.append({
                 "name": item.name,
-                "displayName": format_code_name(item.name)
+                "displayName": display_name
             })
     return repos
 
@@ -258,7 +297,7 @@ def get_commit_diff(repo_path: Path, sha: str) -> dict:
     diff_output = run_git(repo_path, "diff", f"{sha}^..{sha}", "--", timeout=60)
 
     # Parse diff into structured format (include full context for before/after view)
-    file_diffs = parse_unified_diff(diff_output, files, include_context=True)
+    file_diffs = parse_unified_diff(diff_output, files, repo_path, sha, include_context=True)
 
     # Calculate stats
     total_add = sum(f.get("additions", 0) for f in file_diffs)
@@ -367,12 +406,14 @@ def should_skip_content(content: str) -> bool:
     return False
 
 
-def parse_unified_diff(diff_text: str, files_info: list, include_context: bool = False) -> list:
+def parse_unified_diff(diff_text: str, files_info: list, repo_path: Path, sha: str, include_context: bool = False) -> list:
     """Parse unified diff output into structured format, filtering metadata.
 
     Args:
         diff_text: Raw unified diff output
         files_info: List of file info dicts with status
+        repo_path: Path to the git repository
+        sha: Commit SHA to extract file content
         include_context: If False, skip unchanged lines to save space
     """
     file_diffs = []
@@ -388,9 +429,15 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
         if line.startswith("diff --git"):
             # Save previous file
             if current_file and not current_file.lower().endswith("readme.md"):
+                # Extract Légifrance ID for article files
+                legifrance_id = ""
+                if current_file.endswith(".md") and "article_" in current_file:
+                    legifrance_id = extract_legifrance_id(repo_path, sha, current_file)
+
                 file_diffs.append({
                     "filename": current_file,
                     "articleName": format_article_name(current_file),
+                    "legifranceId": legifrance_id,
                     "additions": additions,
                     "deletions": deletions,
                     "diff": current_diff
@@ -560,9 +607,15 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
 
     # Save last file (skip README.md files)
     if current_file and not current_file.lower().endswith("readme.md"):
+        # Extract Légifrance ID for article files
+        legifrance_id = ""
+        if current_file.endswith(".md") and "article_" in current_file:
+            legifrance_id = extract_legifrance_id(repo_path, sha, current_file)
+
         file_diffs.append({
             "filename": current_file,
             "articleName": format_article_name(current_file),
+            "legifranceId": legifrance_id,
             "additions": additions,
             "deletions": deletions,
             "diff": current_diff
