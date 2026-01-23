@@ -135,11 +135,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `<a href="${detail.externalUrl}" target="_blank" rel="noopener" class="external-link">Voir sur git.tricoteuses.fr ↗</a>`
                 : '';
 
+            // Handle unavailable details
+            if (detail.unavailable) {
+                commitHeader.innerHTML = `
+                    <h4>${escapeHtml(detail.message)}</h4>
+                `;
+                commitDiff.innerHTML = `
+                    <div class="error">
+                        <p>${escapeHtml(detail.errorMessage)}</p>
+                        ${externalLink ? `<p>Vous pouvez consulter ce commit sur le dépôt externe :</p><p>${externalLink}</p>` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            const articlesLabel = detail.stats.filesChanged === 1 ? '1 article' : `${detail.stats.filesChanged} articles`;
+
             commitHeader.innerHTML = `
                 <h4>${escapeHtml(detail.message)}</h4>
                 <div class="commit-meta">
                     ${formatDate(detail.date)} •
-                    ${detail.stats.filesChanged} fichier(s) •
+                    ${articlesLabel} •
                     <span class="stat-add">+${detail.stats.additions}</span>
                     <span class="stat-del">-${detail.stats.deletions}</span>
                     ${externalLink}
@@ -275,9 +291,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 currentCommits.forEach((commit, idx) => {
                     const li = document.createElement('li');
-                    const filesLabel = commit.files === 1 ? '1 fichier' : `${commit.files || '?'} fichiers`;
+                    const articlesLabel = commit.files === 1 ? '1 article' : `${commit.files || '?'} articles`;
                     li.innerHTML = `
-                        <div class="commit-date">${formatDate(commit.date)} <span class="commit-files">(${filesLabel})</span></div>
+                        <div class="commit-date">${formatDate(commit.date)} <span class="commit-files">(${articlesLabel})</span></div>
                         <div class="commit-message">${escapeHtml(commit.message)}</div>
                     `;
                     li.addEventListener('click', () => {
