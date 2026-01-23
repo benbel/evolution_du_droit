@@ -111,25 +111,85 @@ def format_code_name(name: str) -> str:
 def format_article_name(filename: str) -> str:
     """Extract a readable article name from the filename."""
     # Example: partie_legislative/livre_premier/.../article_l1234-5.md -> Article L1234-5
-    name = Path(filename).stem  # Get filename without extension
+    path = Path(filename)
+    name = path.stem  # Get filename without extension
 
     # Handle article files
     if name.startswith("article_"):
         article_id = name[8:]  # Remove 'article_'
         # Format: l1234-5 -> L1234-5, r1234-5 -> R1234-5
         article_id = article_id.upper().replace("_", " ")
+
+        # Build breadcrumb from path parts
+        parts = path.parts[:-1]  # Exclude the filename itself
+        breadcrumb_parts = []
+
+        for i, part in enumerate(parts):
+            # Format part nicely
+            formatted = format_path_part(part)
+            if formatted:
+                breadcrumb_parts.append(formatted)
+
+        # Add article at the end
+        if breadcrumb_parts:
+            return " / ".join(breadcrumb_parts) + f" / Article {article_id}"
         return f"Article {article_id}"
 
     # Handle README files
     if name.lower() == "readme":
         # Get parent folder name for context
-        parts = Path(filename).parts
+        parts = path.parts
         if len(parts) > 1:
-            parent = parts[-2].replace("_", " ").title()
+            parent = format_path_part(parts[-2])
             return f"Sommaire - {parent}"
         return "Sommaire"
 
     return name.replace("_", " ").title()
+
+
+def format_path_part(part: str) -> str:
+    """Format a path part nicely (e.g., livre_premier -> Livre Premier)."""
+    # Handle common patterns
+    part_lower = part.lower()
+
+    # Roman numerals mapping
+    roman_map = {
+        "premier": "Ier", "premiere": "Ière",
+        "i": "I", "ii": "II", "iii": "III", "iv": "IV", "v": "V",
+        "vi": "VI", "vii": "VII", "viii": "VIII", "ix": "IX", "x": "X",
+        "xi": "XI", "xii": "XII", "xiii": "XIII", "xiv": "XIV", "xv": "XV"
+    }
+
+    # Check if it's a livre/titre/chapitre pattern
+    if part_lower.startswith("livre_"):
+        num = part_lower[6:]
+        if num in roman_map:
+            return f"Livre {roman_map[num]}"
+        return f"Livre {num.replace('_', ' ').title()}"
+
+    if part_lower.startswith("titre_"):
+        num = part_lower[6:]
+        if num in roman_map:
+            return f"Titre {roman_map[num]}"
+        return f"Titre {num.replace('_', ' ').title()}"
+
+    if part_lower.startswith("chapitre_"):
+        num = part_lower[9:]
+        if num in roman_map:
+            return f"Chapitre {roman_map[num]}"
+        return f"Chapitre {num.replace('_', ' ').title()}"
+
+    if part_lower.startswith("section_"):
+        num = part_lower[8:]
+        if num in roman_map:
+            return f"Section {roman_map[num]}"
+        return f"Section {num.replace('_', ' ').title()}"
+
+    # Skip generic parts
+    if part_lower in ["partie_legislative", "partie_reglementaire", "partie_arretes"]:
+        return ""
+
+    return part.replace("_", " ").title()
 
 
 def get_repos() -> list:
@@ -217,6 +277,25 @@ def get_commit_diff(repo_path: Path, sha: str) -> dict:
     }
 
 
+def should_skip_content(content: str) -> bool:
+    """Check if content should be skipped (references, other formats, etc.)."""
+    stripped = content.strip()
+    if not stripped:
+        return False
+
+    # Skip reference sections
+    if stripped in ["Références", "Autres formats"]:
+        return True
+
+    # Skip markdown headers for references
+    if stripped.startswith("### Articles faisant référence"):
+        return True
+    if stripped.startswith("## Références") or stripped.startswith("## Autres formats"):
+        return True
+
+    return False
+
+
 def parse_unified_diff(diff_text: str, files_info: list, include_context: bool = False) -> list:
     """Parse unified diff output into structured format, filtering metadata.
 
@@ -230,11 +309,12 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
     current_diff = []
     additions = 0
     deletions = 0
+    skip_section = False  # Track if we're in a section to skip
 
     for line in diff_text.split("\n"):
         if line.startswith("diff --git"):
             # Save previous file
-            if current_file:
+            if current_file and not current_file.lower().endswith("readme.md"):
                 file_diffs.append({
                     "filename": current_file,
                     "articleName": format_article_name(current_file),
@@ -249,11 +329,19 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
             current_diff = []
             additions = 0
             deletions = 0
+            skip_section = False
 
         elif current_file and line.startswith("+") and not line.startswith("+++"):
             content = line[1:]
             # Skip metadata lines
             if is_metadata_line(content):
+                continue
+            # Check if entering a skip section
+            if should_skip_content(content):
+                skip_section = True
+                continue
+            # Skip if we're in a skip section
+            if skip_section:
                 continue
             # Convert HTML to plain text
             content = html_to_text(content)
@@ -264,6 +352,13 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
             content = line[1:]
             # Skip metadata lines
             if is_metadata_line(content):
+                continue
+            # Check if entering a skip section
+            if should_skip_content(content):
+                skip_section = True
+                continue
+            # Skip if we're in a skip section
+            if skip_section:
                 continue
             # Convert HTML to plain text
             content = html_to_text(content)
@@ -277,12 +372,23 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
                 # Skip metadata lines in context too
                 if is_metadata_line(content):
                     continue
+                # Check if entering a skip section
+                if should_skip_content(content):
+                    skip_section = True
+                    continue
+                # Skip if we're in a skip section
+                if skip_section:
+                    continue
                 # Convert HTML to plain text
                 content = html_to_text(content)
                 current_diff.append({"type": "unchanged", "content": content})
 
-    # Save last file
-    if current_file:
+        # Reset skip_section on new hunk or empty line in some cases
+        if line.startswith("@@"):
+            skip_section = False
+
+    # Save last file (skip README.md files)
+    if current_file and not current_file.lower().endswith("readme.md"):
         file_diffs.append({
             "filename": current_file,
             "articleName": format_article_name(current_file),

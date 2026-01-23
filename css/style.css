@@ -433,6 +433,23 @@ select:disabled {
     border-top: none;
 }
 
+/* File separator for before/after view */
+.diff-file-separator {
+    background: var(--color-bg-secondary);
+    padding: var(--spacing-md);
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-top: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border);
+    margin: var(--spacing-md) 0;
+    color: var(--color-text);
+}
+
+.diff-file-separator:first-child {
+    margin-top: 0;
+}
+
 /* File selector */
 .file-selector {
     background: var(--color-bg);

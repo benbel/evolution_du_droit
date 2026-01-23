@@ -74,7 +74,27 @@ const API = (() => {
             cache.set(cacheKey, detail);
             return detail;
         } catch (err) {
-            throw new Error(`Commit ${sha} not found: ${err.message}`);
+            // If detail file doesn't exist, return a minimal detail object with external link
+            const fullSha = sha.length > 12 ? sha : null;
+            const externalUrl = fullSha ? `${FORGEJO_BASE}/${repoName}/commit/${fullSha}` : null;
+
+            const minimalDetail = {
+                sha: shortSha,
+                fullSha: fullSha,
+                externalUrl: externalUrl,
+                message: 'Détails non disponibles',
+                files: [],
+                stats: {
+                    additions: 0,
+                    deletions: 0,
+                    filesChanged: 0
+                },
+                unavailable: true,
+                errorMessage: 'Les détails de ce commit ne sont pas disponibles. Ce commit provient peut-être d\'une ancienne version du code qui a été réécrite.'
+            };
+
+            cache.set(cacheKey, minimalDetail);
+            return minimalDetail;
         }
     }
 

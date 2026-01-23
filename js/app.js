@@ -107,6 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderDiffLines(diffLines, container) {
         container.innerHTML = '';
         diffLines.forEach(line => {
+            // Skip reference sections
+            if (shouldSkipLine(line.content)) {
+                return;
+            }
+
             const div = document.createElement('div');
             div.className = `diff-line diff-line-${line.type}`;
 
@@ -116,7 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const content = document.createElement('span');
             content.className = 'diff-line-content';
-            content.textContent = line.content;
+            content.innerHTML = renderMarkdown(line.content || '');
 
             div.appendChild(marker);
             div.appendChild(content);
@@ -135,11 +140,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `<a href="${detail.externalUrl}" target="_blank" rel="noopener" class="external-link">Voir sur git.tricoteuses.fr ↗</a>`
                 : '';
 
+            // Handle unavailable details
+            if (detail.unavailable) {
+                commitHeader.innerHTML = `
+                    <h4>${escapeHtml(detail.message)}</h4>
+                `;
+                commitDiff.innerHTML = `
+                    <div class="error">
+                        <p>${escapeHtml(detail.errorMessage)}</p>
+                        ${externalLink ? `<p>Vous pouvez consulter ce commit sur le dépôt externe :</p><p>${externalLink}</p>` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            const articlesLabel = detail.stats.filesChanged === 1 ? '1 article' : `${detail.stats.filesChanged} articles`;
+
             commitHeader.innerHTML = `
                 <h4>${escapeHtml(detail.message)}</h4>
                 <div class="commit-meta">
                     ${formatDate(detail.date)} •
-                    ${detail.stats.filesChanged} fichier(s) •
+                    ${articlesLabel} •
                     <span class="stat-add">+${detail.stats.additions}</span>
                     <span class="stat-del">-${detail.stats.deletions}</span>
                     ${externalLink}
@@ -157,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const header = document.createElement('div');
                 header.className = 'diff-file-header';
                 header.innerHTML = `
-                    <span class="file-name">${escapeHtml(file.filename)}</span>
+                    <span class="file-name">${escapeHtml(file.articleName || file.filename)}</span>
                     <span class="file-stats">
                         <span class="stat-add">+${file.additions}</span>
                         <span class="stat-del">-${file.deletions}</span>
@@ -191,10 +212,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const detail = await API.fetchCommitDetail(repoName, commit.sha);
                 for (const file of detail.files || []) {
-                    leftLines.push({ type: 'unchanged', content: `=== ${file.filename} ===` });
-                    rightLines.push({ type: 'unchanged', content: `=== ${file.filename} ===` });
+                    // Add file separator with formatted title
+                    leftLines.push({ type: 'separator', content: file.articleName || file.filename });
+                    rightLines.push({ type: 'separator', content: file.articleName || file.filename });
 
                     for (const line of file.diff || []) {
+                        // Skip reference sections
+                        if (shouldSkipLine(line.content)) {
+                            continue;
+                        }
+
                         if (line.type === 'del') {
                             leftLines.push(line);
                             rightLines.push({ type: 'empty', content: '' });
@@ -216,10 +243,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderDiffPane(rightLines, diffRight);
     }
 
+    function shouldSkipLine(content) {
+        if (!content) return false;
+        const trimmed = content.trim();
+
+        // Skip reference sections
+        if (trimmed === 'Références' || trimmed === 'Autres formats') {
+            return true;
+        }
+        if (trimmed.startsWith('### Articles faisant référence')) {
+            return true;
+        }
+        if (trimmed.startsWith('## Références') || trimmed.startsWith('## Autres formats')) {
+            return true;
+        }
+
+        return false;
+    }
+
     function renderDiffPane(lines, container) {
         container.innerHTML = '';
         lines.forEach(line => {
             const div = document.createElement('div');
+
+            // Handle separator lines
+            if (line.type === 'separator') {
+                div.className = 'diff-file-separator';
+                div.innerHTML = `<strong>${escapeHtml(line.content)}</strong>`;
+                container.appendChild(div);
+                return;
+            }
+
             div.className = `diff-line diff-line-${line.type}`;
             if (line.type === 'empty') {
                 div.style.minHeight = '1.6em';
@@ -231,12 +285,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const content = document.createElement('span');
             content.className = 'diff-line-content';
-            content.textContent = line.content;
+            content.innerHTML = renderMarkdown(line.content || '');
 
             div.appendChild(marker);
             div.appendChild(content);
             container.appendChild(div);
         });
+    }
+
+    function renderMarkdown(text) {
+        if (!text) return '';
+
+        let html = escapeHtml(text);
+
+        // Headers
+        html = html.replace(/^### (.+)$/gm, '<strong>$1</strong>');
+        html = html.replace(/^## (.+)$/gm, '<strong>$1</strong>');
+        html = html.replace(/^# (.+)$/gm, '<strong>$1</strong>');
+
+        // Bold
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+        // Italic
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+        // Links
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+        return html;
     }
 
     function escapeHtml(text) {
@@ -275,9 +353,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 currentCommits.forEach((commit, idx) => {
                     const li = document.createElement('li');
-                    const filesLabel = commit.files === 1 ? '1 fichier' : `${commit.files || '?'} fichiers`;
+                    const articlesLabel = commit.files === 1 ? '1 article' : `${commit.files || '?'} articles`;
                     li.innerHTML = `
-                        <div class="commit-date">${formatDate(commit.date)} <span class="commit-files">(${filesLabel})</span></div>
+                        <div class="commit-date">${formatDate(commit.date)} <span class="commit-files">(${articlesLabel})</span></div>
                         <div class="commit-message">${escapeHtml(commit.message)}</div>
                     `;
                     li.addEventListener('click', () => {
