@@ -277,11 +277,22 @@ def get_commit_diff(repo_path: Path, sha: str) -> dict:
     }
 
 
+def is_article_header(content: str) -> bool:
+    """Check if line is just the article number (e.g., 'Article R4137-48')."""
+    stripped = content.strip()
+    # Match "Article" followed by alphanumeric code (e.g., R4137-48, L123-4)
+    return bool(re.match(r'^Article\s+[A-Z]?\d+[A-Z0-9\-]*$', stripped, re.IGNORECASE))
+
+
 def should_skip_content(content: str) -> bool:
     """Check if content should be skipped (references, other formats, etc.)."""
     stripped = content.strip()
     if not stripped:
         return False
+
+    # Skip article header (redundant with title)
+    if is_article_header(stripped):
+        return True
 
     # Skip reference section headers
     if stripped in ["Références", "Autres formats"]:
@@ -297,6 +308,8 @@ def should_skip_content(content: str) -> bool:
     if stripped.startswith("* JSON dans git") or stripped.startswith("* Références JSON dans git"):
         return True
     if stripped.startswith("* Markdown dans git") or stripped.startswith("* Légifrance"):
+        return True
+    if stripped.startswith("* Markdown chronologique dans git"):
         return True
 
     # Skip reference content with legal status keywords
@@ -361,6 +374,10 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
             additions = 0
             deletions = 0
             skip_section = False
+
+        # Skip git diff metadata headers
+        elif line.startswith("index ") or line.startswith("--- a/") or line.startswith("+++ b/"):
+            continue
 
         elif current_file and line.startswith("+") and not line.startswith("+++"):
             content = line[1:]
