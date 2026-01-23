@@ -102,6 +102,49 @@ def run_git(repo_path: Path, *args, timeout=30) -> str:
         return ""
 
 
+def build_legifrance_cache(repo_path: Path) -> dict:
+    """Build a cache of Légifrance IDs for all articles at HEAD (current version).
+
+    Returns:
+        dict: Mapping of filename -> legifrance_id
+    """
+    cache = {}
+    try:
+        # Get all .md files in the repo
+        files_output = run_git(repo_path, "ls-files", "*.md")
+        files = [f for f in files_output.split('\n') if f.strip() and 'article_' in f]
+
+        for filename in files:
+            try:
+                # Read file content from HEAD
+                content = run_git(repo_path, "show", f"HEAD:{filename}")
+                if not content:
+                    continue
+
+                # Parse YAML frontmatter
+                lines = content.split('\n')
+                in_frontmatter = False
+                for line in lines:
+                    if line.strip() == '---':
+                        if not in_frontmatter:
+                            in_frontmatter = True
+                        else:
+                            break
+                    elif in_frontmatter:
+                        if line.startswith('Identifiant:'):
+                            legifrance_id = line.split(':', 1)[1].strip()
+                            if legifrance_id.startswith('LEGI'):
+                                cache[filename] = legifrance_id
+                            break
+            except Exception:
+                continue
+
+    except Exception:
+        pass
+
+    return cache
+
+
 def format_code_name(name: str) -> str:
     """Format repository name for display."""
     display = name.replace("_", " ")
@@ -193,16 +236,29 @@ def format_path_part(part: str) -> str:
 
 
 def get_repos() -> list:
-    """Get list of all repositories."""
+    """Get list of all repositories with real names from README.md."""
     repos = []
     if not CODES_DIR.exists():
         return repos
 
     for item in sorted(CODES_DIR.iterdir()):
         if item.is_dir() and (item / ".git").exists():
+            # Try to extract real title from README.md
+            display_name = format_code_name(item.name)  # fallback
+            readme_path = item / "README.md"
+            if readme_path.exists():
+                try:
+                    with open(readme_path, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            if line.startswith('# '):
+                                display_name = line[2:].strip()
+                                break
+                except Exception:
+                    pass  # Use fallback if reading fails
+
             repos.append({
                 "name": item.name,
-                "displayName": format_code_name(item.name)
+                "displayName": display_name
             })
     return repos
 
@@ -235,8 +291,14 @@ def get_commits(repo_path: Path) -> list:
     return commits
 
 
-def get_commit_diff(repo_path: Path, sha: str) -> dict:
-    """Get diff for a commit using git diff."""
+def get_commit_diff(repo_path: Path, sha: str, legifrance_cache: dict = None) -> dict:
+    """Get diff for a commit using git diff.
+
+    Args:
+        repo_path: Path to the repository
+        sha: Commit SHA
+        legifrance_cache: Optional cache of filename -> legifrance_id mappings
+    """
     # Get commit message
     message = run_git(repo_path, "log", "-1", "--format=%s", sha)
     date = run_git(repo_path, "log", "-1", "--format=%aI", sha).split("T")[0]
@@ -258,7 +320,7 @@ def get_commit_diff(repo_path: Path, sha: str) -> dict:
     diff_output = run_git(repo_path, "diff", f"{sha}^..{sha}", "--", timeout=60)
 
     # Parse diff into structured format (include full context for before/after view)
-    file_diffs = parse_unified_diff(diff_output, files, include_context=True)
+    file_diffs = parse_unified_diff(diff_output, files, legifrance_cache, include_context=True)
 
     # Calculate stats
     total_add = sum(f.get("additions", 0) for f in file_diffs)
@@ -367,12 +429,13 @@ def should_skip_content(content: str) -> bool:
     return False
 
 
-def parse_unified_diff(diff_text: str, files_info: list, include_context: bool = False) -> list:
+def parse_unified_diff(diff_text: str, files_info: list, legifrance_cache: dict = None, include_context: bool = False) -> list:
     """Parse unified diff output into structured format, filtering metadata.
 
     Args:
         diff_text: Raw unified diff output
         files_info: List of file info dicts with status
+        legifrance_cache: Optional cache of filename -> legifrance_id mappings
         include_context: If False, skip unchanged lines to save space
     """
     file_diffs = []
@@ -388,9 +451,15 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
         if line.startswith("diff --git"):
             # Save previous file
             if current_file and not current_file.lower().endswith("readme.md"):
+                # Get Légifrance ID from cache
+                legifrance_id = ""
+                if legifrance_cache and current_file in legifrance_cache:
+                    legifrance_id = legifrance_cache[current_file]
+
                 file_diffs.append({
                     "filename": current_file,
                     "articleName": format_article_name(current_file),
+                    "legifranceId": legifrance_id,
                     "additions": additions,
                     "deletions": deletions,
                     "diff": current_diff
@@ -560,9 +629,15 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
 
     # Save last file (skip README.md files)
     if current_file and not current_file.lower().endswith("readme.md"):
+        # Get Légifrance ID from cache
+        legifrance_id = ""
+        if legifrance_cache and current_file in legifrance_cache:
+            legifrance_id = legifrance_cache[current_file]
+
         file_diffs.append({
             "filename": current_file,
             "articleName": format_article_name(current_file),
+            "legifranceId": legifrance_id,
             "additions": additions,
             "deletions": deletions,
             "diff": current_diff
@@ -634,6 +709,11 @@ def main():
         with open(commits_dir / f"{repo_name}.json", "w", encoding="utf-8") as f:
             json.dump(commits, f, ensure_ascii=False, separators=(',', ':'))
 
+        # Build Légifrance ID cache once for this repo (much faster than per-commit)
+        print(f"  Building Légifrance ID cache...")
+        legifrance_cache = build_legifrance_cache(repo_path)
+        print(f"  Cached {len(legifrance_cache)} article IDs")
+
         # Generate details for each commit
         repo_details_dir = details_dir / repo_name
         repo_details_dir.mkdir(exist_ok=True)
@@ -648,7 +728,7 @@ def main():
                 continue
 
             try:
-                detail = get_commit_diff(repo_path, sha)
+                detail = get_commit_diff(repo_path, sha, legifrance_cache)
                 # Save as gzip-compressed JSON
                 json_bytes = json.dumps(detail, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
                 with gzip.open(detail_file, 'wb') as f:
