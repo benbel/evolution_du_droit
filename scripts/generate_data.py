@@ -284,6 +284,23 @@ def is_article_header(content: str) -> bool:
     return bool(re.match(r'^Article\s+[A-Z]?\d+[A-Z0-9\-]*$', stripped, re.IGNORECASE))
 
 
+def is_section_header(content: str) -> bool:
+    """Check if line is a section header that should skip entire section."""
+    stripped = content.strip()
+    if not stripped:
+        return False
+
+    # Skip reference section headers and everything after them
+    if stripped in ["Références", "Autres formats"]:
+        return True
+    if stripped.startswith("### Articles faisant référence") or stripped.startswith("### Textes faisant référence"):
+        return True
+    if stripped.startswith("## Références") or stripped.startswith("## Autres formats"):
+        return True
+
+    return False
+
+
 def should_skip_content(content: str) -> bool:
     """Check if content should be skipped (references, other formats, etc.)."""
     stripped = content.strip()
@@ -294,17 +311,23 @@ def should_skip_content(content: str) -> bool:
     if is_article_header(stripped):
         return True
 
-    # Skip reference section headers
+    # Skip section headers
     if stripped in ["Références", "Autres formats"]:
         return True
-
-    # Skip markdown headers for references
-    if stripped.startswith("### Articles faisant référence"):
+    if stripped.startswith("### Articles faisant référence") or stripped.startswith("### Textes faisant référence"):
         return True
     if stripped.startswith("## Références") or stripped.startswith("## Autres formats"):
         return True
 
-    # Skip file format bullets
+    # Skip file format bullets - match exact URLs in markdown links
+    if stripped.startswith("* [JSON dans git]") or stripped.startswith("* [Références JSON dans git]"):
+        return True
+    if stripped.startswith("* [Markdown dans git]") or stripped.startswith("* [Légifrance]"):
+        return True
+    if stripped.startswith("* [Markdown chronologique dans git]"):
+        return True
+
+    # Also match simple bullet points (backward compatibility)
     if stripped.startswith("* JSON dans git") or stripped.startswith("* Références JSON dans git"):
         return True
     if stripped.startswith("* Markdown dans git") or stripped.startswith("* Légifrance"):
@@ -314,7 +337,7 @@ def should_skip_content(content: str) -> bool:
 
     # Skip reference content with legal status keywords
     # Pattern: contains AUTONOME, VIGUEUR, MODIFIE, CITATION, CREE followed by "cible" or "source"
-    if any(keyword in stripped for keyword in ["AUTONOME ", "VIGUEUR,", "MODIFIE,", "CITATION ", "CREE "]):
+    if any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CITATION", "CREE", "ENTIEREMENT_MODIF"]):
         if " cible" in stripped or " source" in stripped:
             return True
 
@@ -334,7 +357,7 @@ def should_skip_content(content: str) -> bool:
 
     # Skip decree/law references in citation format
     if any(stripped.startswith(prefix) for prefix in ["Décret n°", "Ordonnance n°", "LOI n°", "Loi n°"]):
-        if " - article " in stripped and any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CREE"]):
+        if (" - article " in stripped or " - art. " in stripped) and any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CREE", "ENTIEREMENT_MODIF"]):
             return True
 
     return False
@@ -353,7 +376,9 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
     current_diff = []
     additions = 0
     deletions = 0
-    skip_section = False  # Track if we're in a section to skip
+    skip_details = False  # Track if we're inside <details> tag
+    before_article = True  # Track if we're before the article header
+    in_reference_section = False  # Track if we're in a reference section
 
     for line in diff_text.split("\n"):
         if line.startswith("diff --git"):
@@ -373,7 +398,9 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
             current_diff = []
             additions = 0
             deletions = 0
-            skip_section = False
+            skip_details = False
+            before_article = True
+            in_reference_section = False
 
         # Skip git diff metadata headers
         elif line.startswith("index ") or line.startswith("--- a/") or line.startswith("+++ b/"):
@@ -381,59 +408,151 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
 
         elif current_file and line.startswith("+") and not line.startswith("+++"):
             content = line[1:]
+            stripped = content.strip()
+
+            # Track <details> tag
+            if "<details>" in stripped or stripped.startswith("<details"):
+                skip_details = True
+                continue
+            if "</details>" in stripped:
+                skip_details = False
+                continue
+            if skip_details:
+                continue
+
+            # Track reference sections
+            if stripped.startswith("### Textes faisant référence") or stripped.startswith("### Articles faisant référence"):
+                in_reference_section = True
+                continue
+            if in_reference_section:
+                # End reference section when we hit a new heading or empty line after references
+                if stripped.startswith("#") and not stripped.startswith("###"):
+                    in_reference_section = False
+                else:
+                    continue
+
+            # Track article header - skip metadata before article
+            if stripped.startswith("# Article "):
+                before_article = False
+                in_reference_section = False  # Reset when we see article header
+                continue  # Skip the article header itself
+            if before_article:
+                continue  # Skip all metadata before article
+
             # Skip metadata lines
             if is_metadata_line(content):
                 continue
-            # Check if entering a skip section
+
+            # Skip individual content that should be filtered
             if should_skip_content(content):
-                skip_section = True
                 continue
-            # Skip if we're in a skip section
-            if skip_section:
-                continue
+
             # Convert HTML to plain text
             content = html_to_text(content)
-            additions += 1
-            current_diff.append({"type": "add", "content": content})
+            if content.strip():  # Only add non-empty lines
+                additions += 1
+                current_diff.append({"type": "add", "content": content})
 
         elif current_file and line.startswith("-") and not line.startswith("---"):
             content = line[1:]
+            stripped = content.strip()
+
+            # Track <details> tag
+            if "<details>" in stripped or stripped.startswith("<details"):
+                skip_details = True
+                continue
+            if "</details>" in stripped:
+                skip_details = False
+                continue
+            if skip_details:
+                continue
+
+            # Track reference sections
+            if stripped.startswith("### Textes faisant référence") or stripped.startswith("### Articles faisant référence"):
+                in_reference_section = True
+                continue
+            if in_reference_section:
+                # End reference section when we hit a new heading or empty line after references
+                if stripped.startswith("#") and not stripped.startswith("###"):
+                    in_reference_section = False
+                else:
+                    continue
+
+            # Track article header - skip metadata before article
+            if stripped.startswith("# Article "):
+                before_article = False
+                in_reference_section = False  # Reset when we see article header
+                continue  # Skip the article header itself
+            if before_article:
+                continue  # Skip all metadata before article
+
             # Skip metadata lines
             if is_metadata_line(content):
                 continue
-            # Check if entering a skip section
+
+            # Skip individual content that should be filtered
             if should_skip_content(content):
-                skip_section = True
                 continue
-            # Skip if we're in a skip section
-            if skip_section:
-                continue
+
             # Convert HTML to plain text
             content = html_to_text(content)
-            deletions += 1
-            current_diff.append({"type": "del", "content": content})
+            if content.strip():  # Only add non-empty lines
+                deletions += 1
+                current_diff.append({"type": "del", "content": content})
 
         elif include_context and current_file and not line.startswith("@@") and not line.startswith("\\"):
             # Only include context lines if requested (saves significant space)
             if line:
                 content = line[1:] if line.startswith(" ") else line
+                stripped = content.strip()
+
+                # Track <details> tag
+                if "<details>" in stripped or stripped.startswith("<details"):
+                    skip_details = True
+                    continue
+                if "</details>" in stripped:
+                    skip_details = False
+                    continue
+                if skip_details:
+                    continue
+
+                # Track reference sections
+                if stripped.startswith("### Textes faisant référence") or stripped.startswith("### Articles faisant référence"):
+                    in_reference_section = True
+                    continue
+                if in_reference_section:
+                    # End reference section when we hit a new heading or empty line after references
+                    if stripped.startswith("#") and not stripped.startswith("###"):
+                        in_reference_section = False
+                    else:
+                        continue
+
+                # Track article header - skip metadata before article
+                if stripped.startswith("# Article "):
+                    before_article = False
+                    in_reference_section = False  # Reset when we see article header
+                    continue  # Skip the article header itself
+                if before_article:
+                    continue  # Skip all metadata before article
+
                 # Skip metadata lines in context too
                 if is_metadata_line(content):
                     continue
-                # Check if entering a skip section
+
+                # Skip individual content that should be filtered
                 if should_skip_content(content):
-                    skip_section = True
                     continue
-                # Skip if we're in a skip section
-                if skip_section:
-                    continue
+
                 # Convert HTML to plain text
                 content = html_to_text(content)
-                current_diff.append({"type": "unchanged", "content": content})
+                if content.strip():  # Only add non-empty lines
+                    current_diff.append({"type": "unchanged", "content": content})
 
-        # Reset skip_section on new hunk or empty line in some cases
+        # Reset flags on new hunk
         if line.startswith("@@"):
-            skip_section = False
+            before_article = False
+            skip_details = False
+            in_reference_section = False
 
     # Save last file (skip README.md files)
     if current_file and not current_file.lower().endswith("readme.md"):
