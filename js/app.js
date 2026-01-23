@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const commitHeader = document.getElementById('commit-header');
     const commitDiff = document.getElementById('commit-diff');
     const diffLeft = document.getElementById('diff-left');
-    const diffRight = document.getElementById('diff-right');
-    const labelDateStart = document.getElementById('label-date-start');
-    const labelDateEnd = document.getElementById('label-date-end');
 
     // State
     let currentMode = 'before-after';
@@ -29,13 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentRepo = null;
     let currentStartDate = null;
     let currentEndDate = null;
-
-    // Set default dates
-    const today = new Date();
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    dateEnd.value = today.toISOString().split('T')[0];
-    dateStart.value = oneMonthAgo.toISOString().split('T')[0];
 
     // Format date for display
     function formatDate(dateStr) {
@@ -118,6 +108,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         // If data is already loaded, refresh the view
         if (currentCommits.length > 0 && currentRepo) {
             refreshView();
+        }
+    });
+
+    // Compare button click
+    btnCompare.addEventListener('click', async () => {
+        if (!validateForm()) return;
+
+        const repoName = codeSelect.value;
+        const since = dateStart.value;
+        const until = dateEnd.value;
+
+        showLoading();
+
+        try {
+            currentCommits = await API.fetchCommits(repoName, since, until);
+            currentRepo = repoName;
+            currentStartDate = formatDate(since);
+            currentEndDate = formatDate(until);
+
+            hideLoading();
+            await refreshView();
+
+        } catch (err) {
+            showError('Erreur: ' + err.message);
         }
     });
 
@@ -247,6 +261,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Create single sticky header with dates
+        const stickyHeader = document.createElement('div');
+        stickyHeader.className = 'before-after-sticky-header';
+        stickyHeader.innerHTML = `
+            <div class="sticky-date-left">Version du ${startDate}</div>
+            <div class="sticky-date-right">Version du ${endDate}</div>
+        `;
+        container.appendChild(stickyHeader);
+
         files.forEach((file, fileIndex) => {
             // Create a single table for this article with two columns
             const table = document.createElement('table');
@@ -257,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Create header with article title spanning both columns
             const thead = document.createElement('thead');
 
-            // Title row
+            // Title row (only article name, no dates)
             const titleRow = document.createElement('tr');
             const titleCell = document.createElement('th');
             titleCell.colSpan = 2;
@@ -265,26 +288,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             titleCell.style.textAlign = 'center';
             titleCell.style.fontSize = '1.1em';
             titleCell.style.padding = '0.75em';
+            titleCell.style.borderTop = '2px solid var(--color-border)';
             titleRow.appendChild(titleCell);
             thead.appendChild(titleRow);
-
-            // Version dates row
-            const labelRow = document.createElement('tr');
-            const beforeCell = document.createElement('th');
-            beforeCell.className = 'version-date-header';
-            beforeCell.textContent = `Version du ${startDate}`;
-            beforeCell.style.width = '50%';
-            beforeCell.style.textAlign = 'center';
-            beforeCell.style.padding = '0.5em';
-            const afterCell = document.createElement('th');
-            afterCell.className = 'version-date-header';
-            afterCell.textContent = `Version du ${endDate}`;
-            afterCell.style.width = '50%';
-            afterCell.style.textAlign = 'center';
-            afterCell.style.padding = '0.5em';
-            labelRow.appendChild(beforeCell);
-            labelRow.appendChild(afterCell);
-            thead.appendChild(labelRow);
 
             table.appendChild(thead);
 
@@ -553,10 +559,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentMode === 'changes') {
             viewChanges.classList.remove('hidden');
             viewBeforeAfter.classList.add('hidden');
-            // Reset layout for changes view
-            document.querySelector('.diff-header').style.display = '';
-            diffRight.style.display = '';
-            diffLeft.style.width = '';
 
             commitsList.innerHTML = '';
 
@@ -587,50 +589,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             viewBeforeAfter.classList.remove('hidden');
             viewChanges.classList.add('hidden');
-            // Hide the header and right pane for cleaner layout
-            document.querySelector('.diff-header').style.display = 'none';
-            diffRight.style.display = 'none';
-            diffLeft.style.width = '100%';
             await renderBeforeAfterView(currentRepo, currentCommits, currentStartDate, currentEndDate);
         }
     }
 
-    // Compare button click
-    btnCompare.addEventListener('click', async () => {
-        if (!validateForm()) return;
-
-        const repoName = codeSelect.value;
-        const since = dateStart.value;
-        const until = dateEnd.value;
-
-        showLoading();
-
-        try {
-            currentCommits = await API.fetchCommits(repoName, since, until);
-            currentRepo = repoName;
-            currentStartDate = formatDate(since);
-            currentEndDate = formatDate(until);
-
-            hideLoading();
-            await refreshView();
-
-        } catch (err) {
-            showError('Erreur: ' + err.message);
-        }
-    });
-
-    // Scroll sync for side-by-side view
-    let syncing = false;
-    diffLeft.addEventListener('scroll', () => {
-        if (syncing) return;
-        syncing = true;
-        diffRight.scrollTop = diffLeft.scrollTop;
-        setTimeout(() => syncing = false, 10);
-    });
-    diffRight.addEventListener('scroll', () => {
-        if (syncing) return;
-        syncing = true;
-        diffLeft.scrollTop = diffRight.scrollTop;
-        setTimeout(() => syncing = false, 10);
-    });
 });
