@@ -228,68 +228,81 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (files.length === 0) {
             leftContainer.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
-            rightContainer.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
             return;
         }
 
         files.forEach((file, fileIndex) => {
-            // Create a table for this article
-            const tableLeft = document.createElement('table');
-            tableLeft.className = 'before-after-table';
+            // Create a single table for this article with two columns
+            const table = document.createElement('table');
+            table.className = 'before-after-table';
+            table.style.width = '100%';
+            table.style.marginBottom = '2em';
 
-            const tableRight = document.createElement('table');
-            tableRight.className = 'before-after-table';
+            // Create header with article title spanning both columns
+            const thead = document.createElement('thead');
 
-            // Create header row with article title spanning both columns
-            const headerLeft = document.createElement('thead');
-            const headerRowLeft = document.createElement('tr');
-            const headerCellLeft = document.createElement('th');
-            headerCellLeft.colSpan = 2;
-            headerCellLeft.innerHTML = `${escapeHtml(file.articleName || file.filename)}<br><span style="font-weight: normal; font-size: 0.9em;">Avant</span>`;
-            headerRowLeft.appendChild(headerCellLeft);
-            headerLeft.appendChild(headerRowLeft);
-            tableLeft.appendChild(headerLeft);
+            // Title row
+            const titleRow = document.createElement('tr');
+            const titleCell = document.createElement('th');
+            titleCell.colSpan = 2;
+            titleCell.innerHTML = escapeHtml(file.articleName || file.filename);
+            titleCell.style.textAlign = 'center';
+            titleCell.style.fontSize = '1.1em';
+            titleCell.style.padding = '0.75em';
+            titleRow.appendChild(titleCell);
+            thead.appendChild(titleRow);
 
-            const headerRight = document.createElement('thead');
-            const headerRowRight = document.createElement('tr');
-            const headerCellRight = document.createElement('th');
-            headerCellRight.colSpan = 2;
-            headerCellRight.innerHTML = `${escapeHtml(file.articleName || file.filename)}<br><span style="font-weight: normal; font-size: 0.9em;">Après</span>`;
-            headerRowRight.appendChild(headerCellRight);
-            headerRight.appendChild(headerRowRight);
-            tableRight.appendChild(headerRight);
+            // Avant/Après row
+            const labelRow = document.createElement('tr');
+            const beforeCell = document.createElement('th');
+            beforeCell.textContent = 'Avant';
+            beforeCell.style.width = '50%';
+            beforeCell.style.textAlign = 'center';
+            beforeCell.style.padding = '0.5em';
+            const afterCell = document.createElement('th');
+            afterCell.textContent = 'Après';
+            afterCell.style.width = '50%';
+            afterCell.style.textAlign = 'center';
+            afterCell.style.padding = '0.5em';
+            labelRow.appendChild(beforeCell);
+            labelRow.appendChild(afterCell);
+            thead.appendChild(labelRow);
+
+            table.appendChild(thead);
 
             // Create body
-            const tbodyLeft = document.createElement('tbody');
-            const tbodyRight = document.createElement('tbody');
+            const tbody = document.createElement('tbody');
 
             // Process diff lines for before/after aligned view
             const alignedLines = alignBeforeAfterLines(file.diff || []);
 
             // Render aligned lines
             alignedLines.forEach(({beforeLine, afterLine}) => {
-                // Left side (before)
-                const rowLeft = document.createElement('tr');
+                const row = document.createElement('tr');
+
+                // Left cell (before)
                 const cellLeft = document.createElement('td');
                 cellLeft.className = beforeLine ? `diff-line-${beforeLine.type}` : 'diff-line-empty';
                 cellLeft.innerHTML = beforeLine ? renderMarkdown(beforeLine.content || '') : '&nbsp;';
-                rowLeft.appendChild(cellLeft);
-                tbodyLeft.appendChild(rowLeft);
+                cellLeft.style.width = '50%';
+                cellLeft.style.verticalAlign = 'top';
+                cellLeft.style.padding = '0.25em 0.5em';
+                row.appendChild(cellLeft);
 
-                // Right side (after)
-                const rowRight = document.createElement('tr');
+                // Right cell (after)
                 const cellRight = document.createElement('td');
                 cellRight.className = afterLine ? `diff-line-${afterLine.type}` : 'diff-line-empty';
                 cellRight.innerHTML = afterLine ? renderMarkdown(afterLine.content || '') : '&nbsp;';
-                rowRight.appendChild(cellRight);
-                tbodyRight.appendChild(rowRight);
+                cellRight.style.width = '50%';
+                cellRight.style.verticalAlign = 'top';
+                cellRight.style.padding = '0.25em 0.5em';
+                row.appendChild(cellRight);
+
+                tbody.appendChild(row);
             });
 
-            tableLeft.appendChild(tbodyLeft);
-            tableRight.appendChild(tbodyRight);
-
-            leftContainer.appendChild(tableLeft);
-            rightContainer.appendChild(tableRight);
+            table.appendChild(tbody);
+            leftContainer.appendChild(table);
         });
     }
 
@@ -411,23 +424,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (trimmed === 'Références' || trimmed === 'Autres formats') {
             return true;
         }
-        if (trimmed.startsWith('### Articles faisant référence')) {
+        if (trimmed.startsWith('### Articles faisant référence') || trimmed.startsWith('### Textes faisant référence')) {
             return true;
         }
         if (trimmed.startsWith('## Références') || trimmed.startsWith('## Autres formats')) {
             return true;
         }
 
-        // Skip file format bullets
+        // Skip article header (e.g., "Article R4137-48")
+        if (/^Article\s+[A-Z]?\d+[A-Z0-9\-]*$/i.test(trimmed)) {
+            return true;
+        }
+
+        // Skip file format bullets with markdown links
+        if (trimmed.startsWith('* [JSON dans git]') || trimmed.startsWith('* [Références JSON dans git]')) {
+            return true;
+        }
+        if (trimmed.startsWith('* [Markdown dans git]') || trimmed.startsWith('* [Légifrance]')) {
+            return true;
+        }
+        if (trimmed.startsWith('* [Markdown chronologique dans git]')) {
+            return true;
+        }
+
+        // Also skip simple bullet points (backward compatibility)
         if (trimmed.startsWith('* JSON dans git') || trimmed.startsWith('* Références JSON dans git')) {
             return true;
         }
         if (trimmed.startsWith('* Markdown dans git') || trimmed.startsWith('* Légifrance')) {
             return true;
         }
+        if (trimmed.startsWith('* Markdown chronologique dans git')) {
+            return true;
+        }
 
         // Skip reference content with legal status keywords
-        if (/AUTONOME |VIGUEUR,|MODIFIE,|CITATION |CREE /.test(trimmed)) {
+        if (/AUTONOME|VIGUEUR|MODIFIE|CITATION|CREE|ENTIEREMENT_MODIF/.test(trimmed)) {
             if (trimmed.includes(' cible') || trimmed.includes(' source')) {
                 return true;
             }
@@ -452,7 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Skip decree/law references
         if (/^(Décret n°|Ordonnance n°|LOI n°|Loi n°)/.test(trimmed)) {
-            if (trimmed.includes(' - article ') && /AUTONOME|VIGUEUR|MODIFIE|CREE/.test(trimmed)) {
+            if ((trimmed.includes(' - article ') || trimmed.includes(' - art. ')) && /AUTONOME|VIGUEUR|MODIFIE|CREE|ENTIEREMENT_MODIF/.test(trimmed)) {
                 return true;
             }
         }
