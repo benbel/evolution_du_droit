@@ -1,7 +1,7 @@
 /* Variables */
 :root {
-    --color-primary: #2563eb;
-    --color-primary-hover: #1d4ed8;
+    --color-primary: #286c44;
+    --color-primary-hover: #1f5434;
     --color-bg: #ffffff;
     --color-bg-secondary: #ffffff;
     --color-text: #1e293b;
@@ -54,7 +54,6 @@ body {
 /* Header */
 header {
     background: var(--color-bg);
-    border-bottom: 1px solid var(--color-border);
     padding: var(--spacing-lg) var(--spacing-xl);
     text-align: center;
 }
@@ -94,7 +93,6 @@ main {
     background: var(--color-bg);
     padding: var(--spacing-lg);
     border-radius: var(--radius-md);
-    border: 1px solid var(--color-border);
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-lg);
@@ -106,6 +104,7 @@ main {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
+    justify-content: flex-end;
 }
 
 .control-group label {
@@ -142,6 +141,7 @@ select:disabled {
     gap: var(--spacing-md);
     cursor: pointer;
     user-select: none;
+    padding: var(--spacing-sm) 0;
 }
 
 .mode-label {
@@ -190,6 +190,7 @@ select:disabled {
     font-weight: 500;
     cursor: pointer;
     transition: background 0.15s ease;
+    margin-left: auto;
 }
 
 .btn-primary:hover:not(:disabled) {
