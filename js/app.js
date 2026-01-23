@@ -71,11 +71,22 @@ window.addEventListener('load', async () => {
         codeSelect.disabled = false;
 
         // Load default comparison: Code général des impôts, 01/01/2017 vs 01/01/2026
-        const defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
+        // Fallback to code_de_la_defense if code_general_des_impots not yet available
+        let defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
+        let defaultStartDate = '2017-01-01';
+        let defaultEndDate = '2026-01-01';
+
+        if (!defaultRepo) {
+            // Fallback to code de la défense while other codes are being downloaded
+            defaultRepo = repos.find(repo => repo.name === 'code_de_la_defense');
+            defaultStartDate = '2020-01-01';
+            defaultEndDate = '2026-01-01';
+        }
+
         if (defaultRepo) {
             codeSelect.value = defaultRepo.name;
-            dateStart.value = '2017-01-01';
-            dateEnd.value = '2026-01-01';
+            dateStart.value = defaultStartDate;
+            dateEnd.value = defaultEndDate;
             validateForm();
             // Trigger comparison automatically using await instead of setTimeout for better browser compatibility
             await performComparison();
@@ -237,6 +248,9 @@ window.addEventListener('load', async () => {
             diffLeft.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
             return;
         }
+
+        // Show loading spinner while fetching commits
+        diffLeft.innerHTML = '<div class="loading"><div class="spinner"></div><p>Chargement des modifications...</p></div>';
 
         // Aggregate all files from commits
         const allFiles = [];
