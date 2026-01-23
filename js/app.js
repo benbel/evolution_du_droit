@@ -2,7 +2,7 @@
  * App - Simple viewer for pre-computed legal code changes
  */
 
-document.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('load', async () => {
     // DOM Elements
     const codeSelect = document.getElementById('code-select');
     const dateStart = document.getElementById('date-start');
@@ -70,15 +70,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         codeSelect.disabled = false;
 
-        // Load default comparison: Code de la défense, 01/01/2020 vs 01/01/2026
-        const defaultRepo = repos.find(repo => repo.name === 'code_de_la_defense');
+        // Load default comparison: Code général des impôts, 01/01/2017 vs 01/01/2026
+        const defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
         if (defaultRepo) {
             codeSelect.value = defaultRepo.name;
-            dateStart.value = '2020-01-01';
+            dateStart.value = '2017-01-01';
             dateEnd.value = '2026-01-01';
             validateForm();
-            // Trigger comparison automatically - wait a bit to ensure DOM is ready
-            setTimeout(() => performComparison(), 100);
+            // Trigger comparison automatically using await instead of setTimeout for better browser compatibility
+            await performComparison();
         }
     } catch (err) {
         console.error('Error loading repos:', err);

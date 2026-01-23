@@ -54,15 +54,15 @@ body {
 /* Header */
 header {
     background: var(--color-bg);
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-xl);
     text-align: center;
 }
 
 header h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--color-text);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: 0;
 }
 
 .subtitle {
@@ -91,13 +91,13 @@ main {
 /* Controls */
 .controls {
     background: var(--color-bg);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     border-radius: var(--radius-md);
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     align-items: flex-end;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
 }
 
 .control-group {
@@ -488,16 +488,17 @@ select:disabled {
     z-index: 100;
     background: var(--color-bg);
     border-bottom: 2px solid var(--color-border);
-    padding: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
     font-style: italic;
     font-weight: normal;
     text-align: center;
+    font-size: 0.85rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .sticky-date-left,
 .sticky-date-right {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs);
 }
 
 .before-after-table thead th {
