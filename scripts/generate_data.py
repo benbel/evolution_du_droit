@@ -307,6 +307,10 @@ def should_skip_content(content: str) -> bool:
     if not stripped:
         return False
 
+    # Skip markdown separators (---, ===, etc.)
+    if re.match(r'^[\-=]{3,}$', stripped):
+        return True
+
     # Skip article header (redundant with title)
     if is_article_header(stripped):
         return True
@@ -335,9 +339,9 @@ def should_skip_content(content: str) -> bool:
     if stripped.startswith("* Markdown chronologique dans git"):
         return True
 
-    # Skip reference content with legal status keywords
-    # Pattern: contains AUTONOME, VIGUEUR, MODIFIE, CITATION, CREE followed by "cible" or "source"
-    if any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CITATION", "CREE", "ENTIEREMENT_MODIF"]):
+    # Skip reference content with legal status keywords (including CODIFICATION)
+    # Pattern: contains AUTONOME, VIGUEUR, MODIFIE, CITATION, CREE, CODIFICATION followed by "cible" or "source"
+    if any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CITATION", "CREE", "ENTIEREMENT_MODIF", "CODIFICATION"]):
         if " cible" in stripped or " source" in stripped:
             return True
 
@@ -357,7 +361,7 @@ def should_skip_content(content: str) -> bool:
 
     # Skip decree/law references in citation format
     if any(stripped.startswith(prefix) for prefix in ["Décret n°", "Ordonnance n°", "LOI n°", "Loi n°"]):
-        if (" - article " in stripped or " - art. " in stripped) and any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CREE", "ENTIEREMENT_MODIF"]):
+        if (" - article " in stripped or " - art. " in stripped) and any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CREE", "ENTIEREMENT_MODIF", "CODIFICATION"]):
             return True
 
     return False
@@ -403,7 +407,7 @@ def parse_unified_diff(diff_text: str, files_info: list, include_context: bool =
             in_reference_section = False
 
         # Skip git diff metadata headers
-        elif line.startswith("index ") or line.startswith("--- a/") or line.startswith("+++ b/"):
+        elif line.startswith("index ") or line.startswith("--- a/") or line.startswith("+++ b/") or line.startswith("new file mode") or line.startswith("deleted file mode") or line.startswith("similarity index") or line.startswith("rename from") or line.startswith("rename to") or line == "--- /dev/null":
             continue
 
         elif current_file and line.startswith("+") and not line.startswith("+++"):

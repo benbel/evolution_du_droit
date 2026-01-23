@@ -197,10 +197,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Render side-by-side view from multiple commits
-    async function renderBeforeAfterView(repoName, commits) {
+    async function renderBeforeAfterView(repoName, commits, startDate, endDate) {
         if (commits.length === 0) {
             diffLeft.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
-            diffRight.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
             return;
         }
 
@@ -219,15 +218,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Render each file as a separate table
-        renderBeforeAfterTables(allFiles, diffLeft, diffRight);
+        renderBeforeAfterTables(allFiles, diffLeft, startDate, endDate);
     }
 
-    function renderBeforeAfterTables(files, leftContainer, rightContainer) {
-        leftContainer.innerHTML = '';
-        rightContainer.innerHTML = '';
+    function renderBeforeAfterTables(files, container, startDate, endDate) {
+        container.innerHTML = '';
 
         if (files.length === 0) {
-            leftContainer.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
+            container.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
             return;
         }
 
@@ -252,15 +250,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             titleRow.appendChild(titleCell);
             thead.appendChild(titleRow);
 
-            // Avant/Après row
+            // Version dates row
             const labelRow = document.createElement('tr');
             const beforeCell = document.createElement('th');
-            beforeCell.textContent = 'Avant';
+            beforeCell.textContent = `Version du ${startDate}`;
             beforeCell.style.width = '50%';
             beforeCell.style.textAlign = 'center';
             beforeCell.style.padding = '0.5em';
             const afterCell = document.createElement('th');
-            afterCell.textContent = 'Après';
+            afterCell.textContent = `Version du ${endDate}`;
             afterCell.style.width = '50%';
             afterCell.style.textAlign = 'center';
             afterCell.style.padding = '0.5em';
@@ -302,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             table.appendChild(tbody);
-            leftContainer.appendChild(table);
+            container.appendChild(table);
         });
     }
 
@@ -420,6 +418,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!content) return false;
         const trimmed = content.trim();
 
+        // Skip markdown separators (---, ===, etc.)
+        if (/^[\-=]{3,}$/.test(trimmed)) {
+            return true;
+        }
+
         // Skip reference section headers
         if (trimmed === 'Références' || trimmed === 'Autres formats') {
             return true;
@@ -458,8 +461,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return true;
         }
 
-        // Skip reference content with legal status keywords
-        if (/AUTONOME|VIGUEUR|MODIFIE|CITATION|CREE|ENTIEREMENT_MODIF/.test(trimmed)) {
+        // Skip reference content with legal status keywords (including CODIFICATION)
+        if (/AUTONOME|VIGUEUR|MODIFIE|CITATION|CREE|ENTIEREMENT_MODIF|CODIFICATION/.test(trimmed)) {
             if (trimmed.includes(' cible') || trimmed.includes(' source')) {
                 return true;
             }
@@ -484,7 +487,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Skip decree/law references
         if (/^(Décret n°|Ordonnance n°|LOI n°|Loi n°)/.test(trimmed)) {
-            if ((trimmed.includes(' - article ') || trimmed.includes(' - art. ')) && /AUTONOME|VIGUEUR|MODIFIE|CREE|ENTIEREMENT_MODIF/.test(trimmed)) {
+            if ((trimmed.includes(' - article ') || trimmed.includes(' - art. ')) && /AUTONOME|VIGUEUR|MODIFIE|CREE|ENTIEREMENT_MODIF|CODIFICATION/.test(trimmed)) {
                 return true;
             }
         }
@@ -541,6 +544,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentMode === 'changes') {
                 viewChanges.classList.remove('hidden');
                 viewBeforeAfter.classList.add('hidden');
+                // Reset layout for changes view
+                document.querySelector('.diff-header').style.display = '';
+                diffRight.style.display = '';
+                diffLeft.style.width = '';
 
                 commitsList.innerHTML = '';
 
@@ -571,9 +578,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 viewBeforeAfter.classList.remove('hidden');
                 viewChanges.classList.add('hidden');
-                labelDateStart.textContent = formatDate(since);
-                labelDateEnd.textContent = formatDate(until);
-                await renderBeforeAfterView(repoName, currentCommits);
+                // Hide the header and right pane for cleaner layout
+                document.querySelector('.diff-header').style.display = 'none';
+                diffRight.style.display = 'none';
+                diffLeft.style.width = '100%';
+                await renderBeforeAfterView(repoName, currentCommits, formatDate(since), formatDate(until));
             }
 
         } catch (err) {
