@@ -478,24 +478,35 @@ select:disabled {
     margin-bottom: var(--spacing-lg);
 }
 
+/* Sticky header for before/after dates */
+.before-after-sticky-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--color-bg);
+    border-bottom: 2px solid var(--color-border);
+    padding: var(--spacing-md);
+    font-style: italic;
+    font-weight: normal;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sticky-date-left,
+.sticky-date-right {
+    padding: var(--spacing-sm);
+}
+
 .before-after-table thead th {
     background: var(--color-bg-secondary);
     padding: var(--spacing-md);
     text-align: center;
     font-weight: 600;
     font-size: 0.95rem;
-    border-top: 2px solid var(--color-border);
     border-bottom: 1px solid var(--color-border);
     color: var(--color-text);
-}
-
-.before-after-table thead th.version-date-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    font-style: italic;
-    font-weight: normal;
-    background: var(--color-bg);
 }
 
 .before-after-table tbody td {
