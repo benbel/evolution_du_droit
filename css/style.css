@@ -453,6 +453,53 @@ select:disabled {
     margin-bottom: var(--spacing-sm);
 }
 
+/* Before/After tables */
+.before-after-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--spacing-lg);
+}
+
+.before-after-table thead th {
+    background: var(--color-bg-secondary);
+    padding: var(--spacing-md);
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-top: 2px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.before-after-table tbody td {
+    padding: 2px var(--spacing-md);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+}
+
+.before-after-table tbody td.diff-line-add {
+    background: var(--color-add-bg);
+    color: var(--color-add-text);
+}
+
+.before-after-table tbody td.diff-line-del {
+    background: var(--color-del-bg);
+    color: var(--color-del-text);
+}
+
+.before-after-table tbody td.diff-line-unchanged {
+    background: var(--color-unchanged-bg);
+}
+
+.before-after-table tbody td.diff-line-empty {
+    background: var(--color-bg-secondary);
+}
+
 /* File selector */
 .file-selector {
     background: var(--color-bg);

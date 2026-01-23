@@ -233,54 +233,136 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         files.forEach((file, fileIndex) => {
-            // Create article title section (spans both columns)
-            const titleLeft = document.createElement('div');
-            titleLeft.className = 'article-title';
-            titleLeft.innerHTML = `<strong>${escapeHtml(file.articleName || file.filename)}</strong>`;
+            // Create a table for this article
+            const tableLeft = document.createElement('table');
+            tableLeft.className = 'before-after-table';
 
-            const titleRight = document.createElement('div');
-            titleRight.className = 'article-title';
-            titleRight.innerHTML = `<strong>${escapeHtml(file.articleName || file.filename)}</strong>`;
+            const tableRight = document.createElement('table');
+            tableRight.className = 'before-after-table';
 
-            leftContainer.appendChild(titleLeft);
-            rightContainer.appendChild(titleRight);
+            // Create header row with article title spanning both columns
+            const headerLeft = document.createElement('thead');
+            const headerRowLeft = document.createElement('tr');
+            const headerCellLeft = document.createElement('th');
+            headerCellLeft.colSpan = 2;
+            headerCellLeft.innerHTML = `${escapeHtml(file.articleName || file.filename)}<br><span style="font-weight: normal; font-size: 0.9em;">Avant</span>`;
+            headerRowLeft.appendChild(headerCellLeft);
+            headerLeft.appendChild(headerRowLeft);
+            tableLeft.appendChild(headerLeft);
 
-            // Process diff lines for before/after complete view
-            // BEFORE: unchanged + del (with del in red)
-            // AFTER: unchanged + add (with add in green)
-            const leftLines = [];
-            const rightLines = [];
+            const headerRight = document.createElement('thead');
+            const headerRowRight = document.createElement('tr');
+            const headerCellRight = document.createElement('th');
+            headerCellRight.colSpan = 2;
+            headerCellRight.innerHTML = `${escapeHtml(file.articleName || file.filename)}<br><span style="font-weight: normal; font-size: 0.9em;">Après</span>`;
+            headerRowRight.appendChild(headerCellRight);
+            headerRight.appendChild(headerRowRight);
+            tableRight.appendChild(headerRight);
 
-            for (const line of file.diff || []) {
-                // Skip reference sections
-                if (shouldSkipLine(line.content)) {
-                    continue;
-                }
+            // Create body
+            const tbodyLeft = document.createElement('tbody');
+            const tbodyRight = document.createElement('tbody');
 
-                if (line.type === 'del') {
-                    // Show deletion in BEFORE (left) only
-                    leftLines.push(line);
-                } else if (line.type === 'add') {
-                    // Show addition in AFTER (right) only
-                    rightLines.push(line);
-                } else {
-                    // Show unchanged in both
-                    leftLines.push(line);
-                    rightLines.push(line);
-                }
+            // Process diff lines for before/after aligned view
+            const alignedLines = alignBeforeAfterLines(file.diff || []);
+
+            // Render aligned lines
+            alignedLines.forEach(({beforeLine, afterLine}) => {
+                // Left side (before)
+                const rowLeft = document.createElement('tr');
+                const cellLeft = document.createElement('td');
+                cellLeft.className = beforeLine ? `diff-line-${beforeLine.type}` : 'diff-line-empty';
+                cellLeft.innerHTML = beforeLine ? renderMarkdown(beforeLine.content || '') : '&nbsp;';
+                rowLeft.appendChild(cellLeft);
+                tbodyLeft.appendChild(rowLeft);
+
+                // Right side (after)
+                const rowRight = document.createElement('tr');
+                const cellRight = document.createElement('td');
+                cellRight.className = afterLine ? `diff-line-${afterLine.type}` : 'diff-line-empty';
+                cellRight.innerHTML = afterLine ? renderMarkdown(afterLine.content || '') : '&nbsp;';
+                rowRight.appendChild(cellRight);
+                tbodyRight.appendChild(rowRight);
+            });
+
+            tableLeft.appendChild(tbodyLeft);
+            tableRight.appendChild(tbodyRight);
+
+            leftContainer.appendChild(tableLeft);
+            rightContainer.appendChild(tableRight);
+        });
+    }
+
+    function alignBeforeAfterLines(diffLines) {
+        // Process diff lines to create aligned before/after view
+        // Strategy: unchanged lines appear in both, deletions only in before, additions only in after
+        // Add blank lines to maintain alignment
+        const result = [];
+        let i = 0;
+
+        while (i < diffLines.length) {
+            const line = diffLines[i];
+
+            // Skip reference sections
+            if (shouldSkipLine(line.content)) {
+                i++;
+                continue;
             }
 
-            // Render diff lines for this file (no markers in before/after view)
-            const leftDiffSection = document.createElement('div');
-            leftDiffSection.className = 'article-diff-section';
-            renderDiffLinesInContainer(leftLines, leftDiffSection, false);
-            leftContainer.appendChild(leftDiffSection);
+            if (line.type === 'unchanged') {
+                // Show in both columns
+                result.push({beforeLine: line, afterLine: line});
+                i++;
+            } else if (line.type === 'del') {
+                // Collect consecutive deletions
+                const deletions = [];
+                while (i < diffLines.length && diffLines[i].type === 'del' && !shouldSkipLine(diffLines[i].content)) {
+                    deletions.push(diffLines[i]);
+                    i++;
+                }
 
-            const rightDiffSection = document.createElement('div');
-            rightDiffSection.className = 'article-diff-section';
-            renderDiffLinesInContainer(rightLines, rightDiffSection, false);
-            rightContainer.appendChild(rightDiffSection);
-        });
+                // Check if followed by additions (replacement scenario)
+                const additions = [];
+                let j = i;
+                while (j < diffLines.length && diffLines[j].type === 'add' && !shouldSkipLine(diffLines[j].content)) {
+                    additions.push(diffLines[j]);
+                    j++;
+                }
+
+                if (additions.length > 0) {
+                    // Replacement: align deletions and additions
+                    const maxLen = Math.max(deletions.length, additions.length);
+                    for (let k = 0; k < maxLen; k++) {
+                        result.push({
+                            beforeLine: k < deletions.length ? deletions[k] : null,
+                            afterLine: k < additions.length ? additions[k] : null
+                        });
+                    }
+                    i = j; // Skip the additions we just processed
+                } else {
+                    // Pure deletions: show in before only, blank in after
+                    deletions.forEach(del => {
+                        result.push({beforeLine: del, afterLine: null});
+                    });
+                }
+            } else if (line.type === 'add') {
+                // Collect consecutive additions
+                const additions = [];
+                while (i < diffLines.length && diffLines[i].type === 'add' && !shouldSkipLine(diffLines[i].content)) {
+                    additions.push(diffLines[i]);
+                    i++;
+                }
+
+                // Pure additions: blank in before, show in after
+                additions.forEach(add => {
+                    result.push({beforeLine: null, afterLine: add});
+                });
+            } else {
+                i++;
+            }
+        }
+
+        return result;
     }
 
     function renderDiffLinesInContainer(lines, container, showMarkers = true) {
