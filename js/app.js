@@ -8,8 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dateStart = document.getElementById('date-start');
     const dateEnd = document.getElementById('date-end');
     const btnCompare = document.getElementById('btn-compare');
-    const modeBeforeAfter = document.getElementById('mode-before-after');
-    const modeChanges = document.getElementById('mode-changes');
+    const modeToggleContainer = document.getElementById('mode-toggle-container');
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
     const errorMessage = document.getElementById('error-message');
@@ -25,8 +24,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const labelDateEnd = document.getElementById('label-date-end');
 
     // State
-    let currentMode = 'changes';
+    let currentMode = 'before-after';
     let currentCommits = [];
+    let currentRepo = null;
+    let currentStartDate = null;
+    let currentEndDate = null;
 
     // Set default dates
     const today = new Date();
@@ -77,6 +79,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             codeSelect.appendChild(opt);
         });
         codeSelect.disabled = false;
+
+        // Load default comparison: Code de la défense, 01/01/2020 vs 01/01/2026
+        const defaultRepo = repos.find(repo => repo.name === 'code_de_la_defense');
+        if (defaultRepo) {
+            codeSelect.value = defaultRepo.name;
+            dateStart.value = '2020-01-01';
+            dateEnd.value = '2026-01-01';
+            validateForm();
+            // Trigger comparison automatically
+            btnCompare.click();
+        }
     } catch (err) {
         console.error('Error loading repos:', err);
         if (window.location.protocol === 'file:') {
@@ -91,16 +104,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     dateStart.addEventListener('change', validateForm);
     dateEnd.addEventListener('change', validateForm);
 
-    modeBeforeAfter.addEventListener('click', () => {
-        currentMode = 'before-after';
-        modeBeforeAfter.classList.add('active');
-        modeChanges.classList.remove('active');
-    });
+    // Mode toggle
+    modeToggleContainer.addEventListener('click', async () => {
+        // Toggle mode
+        if (currentMode === 'before-after') {
+            currentMode = 'changes';
+            modeToggleContainer.classList.add('mode-changes');
+        } else {
+            currentMode = 'before-after';
+            modeToggleContainer.classList.remove('mode-changes');
+        }
 
-    modeChanges.addEventListener('click', () => {
-        currentMode = 'changes';
-        modeChanges.classList.add('active');
-        modeBeforeAfter.classList.remove('active');
+        // If data is already loaded, refresh the view
+        if (currentCommits.length > 0 && currentRepo) {
+            refreshView();
+        }
     });
 
     // Render diff lines (pre-computed)
@@ -253,11 +271,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Version dates row
             const labelRow = document.createElement('tr');
             const beforeCell = document.createElement('th');
+            beforeCell.className = 'version-date-header';
             beforeCell.textContent = `Version du ${startDate}`;
             beforeCell.style.width = '50%';
             beforeCell.style.textAlign = 'center';
             beforeCell.style.padding = '0.5em';
             const afterCell = document.createElement('th');
+            afterCell.className = 'version-date-header';
             afterCell.textContent = `Version du ${endDate}`;
             afterCell.style.width = '50%';
             afterCell.style.textAlign = 'center';
@@ -526,6 +546,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         return div.innerHTML;
     }
 
+    // Refresh view based on current mode
+    async function refreshView() {
+        results.classList.remove('hidden');
+
+        if (currentMode === 'changes') {
+            viewChanges.classList.remove('hidden');
+            viewBeforeAfter.classList.add('hidden');
+            // Reset layout for changes view
+            document.querySelector('.diff-header').style.display = '';
+            diffRight.style.display = '';
+            diffLeft.style.width = '';
+
+            commitsList.innerHTML = '';
+
+            if (currentCommits.length === 0) {
+                commitsList.innerHTML = '<li class="no-results"><p>Aucune modification.</p></li>';
+                commitHeader.innerHTML = '<p class="placeholder">Aucune modification trouvée.</p>';
+                commitDiff.innerHTML = '';
+                return;
+            }
+
+            currentCommits.forEach((commit, idx) => {
+                const li = document.createElement('li');
+                const articlesLabel = commit.files === 1 ? '1 article' : `${commit.files || '?'} articles`;
+                li.innerHTML = `
+                    <div class="commit-date">${formatDate(commit.date)} <span class="commit-files">(${articlesLabel})</span></div>
+                    <div class="commit-message">${escapeHtml(commit.message)}</div>
+                `;
+                li.addEventListener('click', () => {
+                    commitsList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
+                    li.classList.add('active');
+                    renderCommitDetail(currentRepo, commit);
+                });
+                commitsList.appendChild(li);
+
+                if (idx === 0) li.click();
+            });
+
+        } else {
+            viewBeforeAfter.classList.remove('hidden');
+            viewChanges.classList.add('hidden');
+            // Hide the header and right pane for cleaner layout
+            document.querySelector('.diff-header').style.display = 'none';
+            diffRight.style.display = 'none';
+            diffLeft.style.width = '100%';
+            await renderBeforeAfterView(currentRepo, currentCommits, currentStartDate, currentEndDate);
+        }
+    }
+
     // Compare button click
     btnCompare.addEventListener('click', async () => {
         if (!validateForm()) return;
@@ -538,52 +607,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             currentCommits = await API.fetchCommits(repoName, since, until);
+            currentRepo = repoName;
+            currentStartDate = formatDate(since);
+            currentEndDate = formatDate(until);
+
             hideLoading();
-            results.classList.remove('hidden');
-
-            if (currentMode === 'changes') {
-                viewChanges.classList.remove('hidden');
-                viewBeforeAfter.classList.add('hidden');
-                // Reset layout for changes view
-                document.querySelector('.diff-header').style.display = '';
-                diffRight.style.display = '';
-                diffLeft.style.width = '';
-
-                commitsList.innerHTML = '';
-
-                if (currentCommits.length === 0) {
-                    commitsList.innerHTML = '<li class="no-results"><p>Aucune modification.</p></li>';
-                    commitHeader.innerHTML = '<p class="placeholder">Aucune modification trouvée.</p>';
-                    commitDiff.innerHTML = '';
-                    return;
-                }
-
-                currentCommits.forEach((commit, idx) => {
-                    const li = document.createElement('li');
-                    const articlesLabel = commit.files === 1 ? '1 article' : `${commit.files || '?'} articles`;
-                    li.innerHTML = `
-                        <div class="commit-date">${formatDate(commit.date)} <span class="commit-files">(${articlesLabel})</span></div>
-                        <div class="commit-message">${escapeHtml(commit.message)}</div>
-                    `;
-                    li.addEventListener('click', () => {
-                        commitsList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
-                        li.classList.add('active');
-                        renderCommitDetail(repoName, commit);
-                    });
-                    commitsList.appendChild(li);
-
-                    if (idx === 0) li.click();
-                });
-
-            } else {
-                viewBeforeAfter.classList.remove('hidden');
-                viewChanges.classList.add('hidden');
-                // Hide the header and right pane for cleaner layout
-                document.querySelector('.diff-header').style.display = 'none';
-                diffRight.style.display = 'none';
-                diffLeft.style.width = '100%';
-                await renderBeforeAfterView(repoName, currentCommits, formatDate(since), formatDate(until));
-            }
+            await refreshView();
 
         } catch (err) {
             showError('Erreur: ' + err.message);
