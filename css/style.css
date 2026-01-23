@@ -3,7 +3,7 @@
     --color-primary: #2563eb;
     --color-primary-hover: #1d4ed8;
     --color-bg: #ffffff;
-    --color-bg-secondary: #f8fafc;
+    --color-bg-secondary: #ffffff;
     --color-text: #1e293b;
     --color-text-secondary: #64748b;
     --color-border: #e2e8f0;
@@ -71,6 +71,15 @@ header h1 {
     font-size: 0.95rem;
 }
 
+.subtitle a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.subtitle a:hover {
+    text-decoration: underline;
+}
+
 /* Main */
 main {
     flex: 1;
@@ -126,39 +135,48 @@ select:disabled {
     cursor: not-allowed;
 }
 
-/* Toggle buttons */
-.toggle-group {
+/* Toggle switch */
+.mode-toggle-container {
     display: flex;
-    gap: 0;
-}
-
-.toggle-btn {
-    padding: var(--spacing-sm) var(--spacing-md);
-    border: 1px solid var(--color-border);
-    background: var(--color-bg);
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
+    align-items: center;
+    gap: var(--spacing-md);
     cursor: pointer;
-    transition: all 0.15s ease;
+    user-select: none;
 }
 
-.toggle-btn:first-child {
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+.mode-label {
+    font-size: 0.875rem;
+    color: var(--color-text);
+    transition: color 0.2s ease;
 }
 
-.toggle-btn:last-child {
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    border-left: none;
+.toggle-switch {
+    width: 48px;
+    height: 24px;
+    background: var(--color-border);
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.2s ease;
 }
 
-.toggle-btn:hover {
-    background: var(--color-bg-secondary);
+.toggle-slider {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-btn.active {
+.mode-toggle-container.mode-changes .toggle-slider {
+    transform: translateX(24px);
+}
+
+.mode-toggle-container.mode-changes .toggle-switch {
     background: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
 }
 
 /* Primary button */
@@ -469,9 +487,15 @@ select:disabled {
     border-top: 2px solid var(--color-border);
     border-bottom: 1px solid var(--color-border);
     color: var(--color-text);
+}
+
+.before-after-table thead th.version-date-header {
     position: sticky;
     top: 0;
     z-index: 10;
+    font-style: italic;
+    font-weight: normal;
+    background: var(--color-bg);
 }
 
 .before-after-table tbody td {

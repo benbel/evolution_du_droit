@@ -9,7 +9,7 @@
 <body>
     <header>
         <h1>Évolution du Droit</h1>
-        <p class="subtitle">Visualisez les modifications des codes juridiques français</p>
+        <p class="subtitle">Visualisez les modifications des codes juridiques français à l'aide des données de <a href="https://git.tricoteuses.fr/codes" target="_blank" rel="noopener">git.tricoteuses.fr</a> et <a href="https://www.legifrance.gouv.fr/" target="_blank" rel="noopener">Légifrance</a>.</p>
     </header>
 
     <main>
@@ -32,14 +32,12 @@
             </div>
 
             <div class="control-group">
-                <label>Mode d'affichage</label>
-                <div class="toggle-group">
-                    <button type="button" id="mode-before-after" class="toggle-btn">
-                        Avant / Après
-                    </button>
-                    <button type="button" id="mode-changes" class="toggle-btn active">
-                        Liste des modifications
-                    </button>
+                <div class="mode-toggle-container" id="mode-toggle-container">
+                    <span class="mode-label">Avant / Après</span>
+                    <div class="toggle-switch">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span class="mode-label">Liste des modifications</span>
                 </div>
             </div>
 
@@ -98,13 +96,6 @@
             </select>
         </section>
     </main>
-
-    <footer>
-        <p>
-            Données issues de <a href="https://git.tricoteuses.fr/codes" target="_blank" rel="noopener">git.tricoteuses.fr</a>
-            — Projet open source
-        </p>
-    </footer>
 
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
