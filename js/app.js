@@ -77,8 +77,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             dateStart.value = '2020-01-01';
             dateEnd.value = '2026-01-01';
             validateForm();
-            // Trigger comparison automatically
-            btnCompare.click();
+            // Trigger comparison automatically - wait a bit to ensure DOM is ready
+            setTimeout(() => performComparison(), 100);
         }
     } catch (err) {
         console.error('Error loading repos:', err);
@@ -111,8 +111,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Compare button click
-    btnCompare.addEventListener('click', async () => {
+    // Perform comparison
+    async function performComparison() {
         if (!validateForm()) return;
 
         const repoName = codeSelect.value;
@@ -133,7 +133,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             showError('Erreur: ' + err.message);
         }
-    });
+    }
+
+    // Compare button click
+    btnCompare.addEventListener('click', performComparison);
 
     // Render diff lines (pre-computed)
     function renderDiffLines(diffLines, container) {
