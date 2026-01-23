@@ -71,22 +71,11 @@ window.addEventListener('load', async () => {
         codeSelect.disabled = false;
 
         // Load default comparison: Code général des impôts, 01/01/2017 vs 01/01/2026
-        // Fallback to code_de_la_defense if code_general_des_impots not yet available
-        let defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
-        let defaultStartDate = '2017-01-01';
-        let defaultEndDate = '2026-01-01';
-
-        if (!defaultRepo) {
-            // Fallback to code de la défense while other codes are being downloaded
-            defaultRepo = repos.find(repo => repo.name === 'code_de_la_defense');
-            defaultStartDate = '2020-01-01';
-            defaultEndDate = '2026-01-01';
-        }
-
+        const defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
         if (defaultRepo) {
             codeSelect.value = defaultRepo.name;
-            dateStart.value = defaultStartDate;
-            dateEnd.value = defaultEndDate;
+            dateStart.value = '2017-01-01';
+            dateEnd.value = '2026-01-01';
             validateForm();
             // Trigger comparison automatically using await instead of setTimeout for better browser compatibility
             await performComparison();
