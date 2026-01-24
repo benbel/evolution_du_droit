@@ -36,6 +36,11 @@ window.addEventListener('load', async () => {
         });
     }
 
+    // Format date for Legifrance URL (YYYYMMDD format)
+    function formatDateForLegifrance(isoDate) {
+        return isoDate.replace(/-/g, '');
+    }
+
     // Show/hide loading
     function showLoading() {
         loading.classList.remove('hidden');
@@ -235,10 +240,19 @@ window.addEventListener('load', async () => {
                 header.className = 'diff-file-header';
 
                 let fileName = escapeHtml(file.articleName || file.filename);
+
+                // Build external links
+                let externalLinks = '';
                 if (file.legifranceId) {
-                    const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}`;
-                    fileName += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+                    const dateFormatted = formatDateForLegifrance(detail.date);
+                    const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}/${dateFormatted}`;
+                    externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
                 }
+                if (detail.fullSha) {
+                    const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${repoName}/commit/${detail.fullSha}`;
+                    externalLinks += ` <a href="${tricoteusesUrl}" target="_blank" rel="noopener" class="external-link">↗ Tricoteuses</a>`;
+                }
+                fileName += externalLinks;
 
                 header.innerHTML = `
                     <span class="file-name">${fileName}</span>
@@ -276,7 +290,13 @@ window.addEventListener('load', async () => {
             try {
                 const detail = await API.fetchCommitDetail(repoName, commit.sha);
                 for (const file of detail.files || []) {
-                    allFiles.push(file);
+                    // Enrich file with commit information for links
+                    allFiles.push({
+                        ...file,
+                        commitDate: detail.date,
+                        commitFullSha: detail.fullSha,
+                        commitRepoName: repoName
+                    });
                 }
             } catch (e) {
                 console.error('Error loading commit:', e);
@@ -314,16 +334,25 @@ window.addEventListener('load', async () => {
             // Create header with article title spanning both columns
             const thead = document.createElement('thead');
 
-            // Title row (with Légifrance link if available)
+            // Title row (with Légifrance and Tricoteuses links if available)
             const titleRow = document.createElement('tr');
             const titleCell = document.createElement('th');
             titleCell.colSpan = 2;
 
             let titleHTML = escapeHtml(file.articleName || file.filename);
-            if (file.legifranceId) {
-                const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}`;
-                titleHTML += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+
+            // Build external links
+            let externalLinks = '';
+            if (file.legifranceId && file.commitDate) {
+                const dateFormatted = formatDateForLegifrance(file.commitDate);
+                const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}/${dateFormatted}`;
+                externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
             }
+            if (file.commitFullSha && file.commitRepoName) {
+                const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${file.commitRepoName}/commit/${file.commitFullSha}`;
+                externalLinks += ` <a href="${tricoteusesUrl}" target="_blank" rel="noopener" class="external-link">↗ Tricoteuses</a>`;
+            }
+            titleHTML += externalLinks;
 
             titleCell.innerHTML = titleHTML;
             titleCell.style.textAlign = 'center';
