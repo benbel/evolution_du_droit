@@ -706,8 +706,33 @@ footer a:hover {
     text-decoration: underline;
 }
 
+/* Print header (hidden on screen, visible on print) */
+.print-header {
+    display: none;
+}
+
 /* Print styles */
 @media print {
+    /* Show print header */
+    .print-header {
+        display: block !important;
+        margin-bottom: 2em;
+        padding-bottom: 1em;
+        border-bottom: 2px solid #333;
+    }
+
+    .print-header h1 {
+        margin: 0 0 0.5em 0;
+        font-size: 1.5em;
+        color: #333;
+    }
+
+    .print-header p {
+        margin: 0.25em 0;
+        color: #666;
+        font-size: 0.9em;
+    }
+
     /* Hide UI elements */
     header,
     .controls,
