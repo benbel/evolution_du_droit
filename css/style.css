@@ -110,8 +110,8 @@ main {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-md);
-    align-items: flex-end;
-    flex-basis: 100%;
+    align-items: center;
+    justify-content: center;
     width: 100%;
 }
 
@@ -119,29 +119,34 @@ main {
     justify-content: center;
 }
 
-.controls-row-code select {
-    min-width: 300px;
+.code-selector-wrapper {
+    position: relative;
+    min-width: 400px;
+}
+
+.code-selector-wrapper input {
+    width: 100%;
 }
 
 .controls-row-actions {
     justify-content: center;
-    align-items: center;
+    align-items: flex-end;
+    gap: var(--spacing-md);
 }
 
-.control-group {
+.date-control {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
-    justify-content: flex-end;
 }
 
-.control-group label {
-    font-size: 0.875rem;
+.date-control label {
+    font-size: 0.8rem;
     font-weight: 500;
     color: var(--color-text-secondary);
 }
 
-select, input[type="date"] {
+select, input[type="date"], input[type="text"] {
     padding: var(--spacing-sm) var(--spacing-md);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
@@ -151,13 +156,13 @@ select, input[type="date"] {
     min-width: 200px;
 }
 
-select:focus, input[type="date"]:focus {
+select:focus, input[type="date"]:focus, input[type="text"]:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-select:disabled {
+select:disabled, input[type="text"]:disabled {
     background-color: var(--color-bg-secondary);
     cursor: not-allowed;
 }
@@ -166,10 +171,13 @@ select:disabled {
 .mode-toggle-container {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     cursor: pointer;
     user-select: none;
-    padding: var(--spacing-sm) 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
 }
 
 .mode-label {
@@ -631,13 +639,25 @@ footer a:hover {
         align-items: stretch;
     }
 
-    .control-group {
-        width: 100%;
-    }
-
-    select, input[type="date"] {
+    .control-group,
+    .date-control,
+    .code-selector-wrapper {
         width: 100%;
         min-width: auto;
+    }
+
+    select, input[type="date"], input[type="text"] {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .controls-row-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mode-toggle-container {
+        justify-content: center;
     }
 
     .changes-container {

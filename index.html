@@ -14,33 +14,31 @@
 
     <main>
         <section class="controls">
+            <!-- Row A: Code selector (searchable) -->
             <div class="controls-row controls-row-code">
-                <select id="code-select" disabled>
-                    <option value="">Chargement des codes...</option>
-                </select>
+                <div class="code-selector-wrapper">
+                    <input type="text" id="code-input" list="code-list" placeholder="Chargement des codes..." disabled autocomplete="off">
+                    <datalist id="code-list"></datalist>
+                </div>
             </div>
 
+            <!-- Row B+C: Date controls + toggle + print -->
             <div class="controls-row controls-row-actions">
-                <div class="control-group">
+                <div class="date-control">
                     <label for="date-start">Date de début</label>
                     <input type="date" id="date-start">
                 </div>
-
-                <div class="control-group">
+                <div class="date-control">
                     <label for="date-end">Date de fin</label>
                     <input type="date" id="date-end">
                 </div>
-
-                <div class="control-group">
-                    <div class="mode-toggle-container" id="mode-toggle-container">
-                        <span class="mode-label">Avant / Après</span>
-                        <div class="toggle-switch">
-                            <div class="toggle-slider"></div>
-                        </div>
-                        <span class="mode-label">Liste des modifications</span>
+                <div class="mode-toggle-container" id="mode-toggle-container">
+                    <span class="mode-label">Avant / Après</span>
+                    <div class="toggle-switch">
+                        <div class="toggle-slider"></div>
                     </div>
+                    <span class="mode-label">Liste des modifications</span>
                 </div>
-
                 <button type="button" id="btn-print" class="btn-secondary hidden">
                     Imprimer
                 </button>
