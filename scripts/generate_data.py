@@ -103,10 +103,10 @@ def run_git(repo_path: Path, *args, timeout=30) -> str:
 
 
 def build_legifrance_cache(repo_path: Path) -> dict:
-    """Build a cache of Légifrance IDs for all articles at HEAD (current version).
+    """Build a cache of Légifrance URLs for all articles at HEAD (current version).
 
     Returns:
-        dict: Mapping of filename -> legifrance_id
+        dict: Mapping of filename -> legifrance_url
     """
     cache = {}
     try:
@@ -121,21 +121,16 @@ def build_legifrance_cache(repo_path: Path) -> dict:
                 if not content:
                     continue
 
-                # Parse YAML frontmatter
+                # Look for Légifrance link in "Autres formats" section
+                # Pattern: * [Légifrance](URL)
                 lines = content.split('\n')
-                in_frontmatter = False
                 for line in lines:
-                    if line.strip() == '---':
-                        if not in_frontmatter:
-                            in_frontmatter = True
-                        else:
-                            break
-                    elif in_frontmatter:
-                        if line.startswith('Identifiant:'):
-                            legifrance_id = line.split(':', 1)[1].strip()
-                            if legifrance_id.startswith('LEGI'):
-                                cache[filename] = legifrance_id
-                            break
+                    # Match markdown link: * [Légifrance](URL)
+                    match = re.search(r'\*\s*\[L[ée]gifrance\]\(([^)]+)\)', line, re.IGNORECASE)
+                    if match:
+                        legifrance_url = match.group(1)
+                        cache[filename] = legifrance_url
+                        break
             except Exception:
                 continue
 
@@ -297,7 +292,7 @@ def get_commit_diff(repo_path: Path, sha: str, legifrance_cache: dict = None) ->
     Args:
         repo_path: Path to the repository
         sha: Commit SHA
-        legifrance_cache: Optional cache of filename -> legifrance_id mappings
+        legifrance_cache: Optional cache of filename -> legifrance_url mappings
     """
     # Get commit message
     message = run_git(repo_path, "log", "-1", "--format=%s", sha)
@@ -427,6 +422,19 @@ def should_skip_content(content: str) -> bool:
         if (" - article " in stripped or " - art. " in stripped) and any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CREE", "ENTIEREMENT_MODIF", "CODIFICATION"]):
             return True
 
+    # Skip decision references (e.g., "Décision n° 2024-1116 QPC du 10 janvier 2025 MODIFICATION cible")
+    if stripped.startswith("Décision n°") or stripped.startswith("D\u00e9cision n°"):
+        if any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CITATION", "CREE", "ENTIEREMENT_MODIF", "CODIFICATION", "cible", "source"]):
+            return True
+
+    # Skip CONCORDANCE references (e.g., "CONCORDANCE source Loi 82-595 1983-07-10, art 23")
+    if "CONCORDANCE" in stripped and any(keyword in stripped for keyword in ["cible", "source"]):
+        return True
+
+    # Skip date-based MODIFICATION/CITATION source references (e.g., "2024-10-18 MODIFICATION source Décision...")
+    if re.match(r'^\d{4}-\d{2}-\d{2}\s+(MODIFICATION|CITATION|MODIFIE|CREE)\s+(source|cible)', stripped):
+        return True
+
     return False
 
 
@@ -436,7 +444,7 @@ def parse_unified_diff(diff_text: str, files_info: list, legifrance_cache: dict 
     Args:
         diff_text: Raw unified diff output
         files_info: List of file info dicts with status
-        legifrance_cache: Optional cache of filename -> legifrance_id mappings
+        legifrance_cache: Optional cache of filename -> legifrance_url mappings
         include_context: If False, skip unchanged lines to save space
     """
     file_diffs = []
@@ -452,15 +460,15 @@ def parse_unified_diff(diff_text: str, files_info: list, legifrance_cache: dict 
         if line.startswith("diff --git"):
             # Save previous file
             if current_file and not current_file.lower().endswith("readme.md"):
-                # Get Légifrance ID from cache
-                legifrance_id = ""
+                # Get Légifrance URL from cache
+                legifrance_url = ""
                 if legifrance_cache and current_file in legifrance_cache:
-                    legifrance_id = legifrance_cache[current_file]
+                    legifrance_url = legifrance_cache[current_file]
 
                 file_diffs.append({
                     "filename": current_file,
                     "articleName": format_article_name(current_file),
-                    "legifranceId": legifrance_id,
+                    "legifranceUrl": legifrance_url,
                     "additions": additions,
                     "deletions": deletions,
                     "diff": current_diff
@@ -630,15 +638,15 @@ def parse_unified_diff(diff_text: str, files_info: list, legifrance_cache: dict 
 
     # Save last file (skip README.md files)
     if current_file and not current_file.lower().endswith("readme.md"):
-        # Get Légifrance ID from cache
-        legifrance_id = ""
+        # Get Légifrance URL from cache
+        legifrance_url = ""
         if legifrance_cache and current_file in legifrance_cache:
-            legifrance_id = legifrance_cache[current_file]
+            legifrance_url = legifrance_cache[current_file]
 
         file_diffs.append({
             "filename": current_file,
             "articleName": format_article_name(current_file),
-            "legifranceId": legifrance_id,
+            "legifranceUrl": legifrance_url,
             "additions": additions,
             "deletions": deletions,
             "diff": current_diff
@@ -710,10 +718,10 @@ def main():
         with open(commits_dir / f"{repo_name}.json", "w", encoding="utf-8") as f:
             json.dump(commits, f, ensure_ascii=False, separators=(',', ':'))
 
-        # Build Légifrance ID cache once for this repo (much faster than per-commit)
-        print(f"  Building Légifrance ID cache...")
+        # Build Légifrance URL cache once for this repo (much faster than per-commit)
+        print(f"  Building Légifrance URL cache...")
         legifrance_cache = build_legifrance_cache(repo_path)
-        print(f"  Cached {len(legifrance_cache)} article IDs")
+        print(f"  Cached {len(legifrance_cache)} article URLs")
 
         # Generate details for each commit
         repo_details_dir = details_dir / repo_name

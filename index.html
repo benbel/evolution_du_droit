@@ -9,7 +9,7 @@
 <body>
     <header>
         <h1>Évolutions du droit</h1>
-        <p class="subtitle">Visualisez les modifications des codes juridiques à l'aide des données de <a href="https://git.tricoteuses.fr/codes" target="_blank" rel="noopener">git.tricoteuses.fr</a> et <a href="https://www.legifrance.gouv.fr/" target="_blank" rel="noopener">Légifrance</a>.</p>
+        <p class="subtitle">Visualisez les modifications des codes juridiques à l'aide des données de <a href="https://git.tricoteuses.fr/codes" target="_blank" rel="noopener"><strong>git.tricoteuses.fr</strong></a> et <a href="https://www.legifrance.gouv.fr/" target="_blank" rel="noopener">Légifrance</a>.</p>
     </header>
 
     <main>
@@ -41,10 +41,6 @@
                     </div>
                 </div>
 
-                <button type="button" id="btn-compare" class="btn-primary" disabled>
-                    Comparer
-                </button>
-
                 <button type="button" id="btn-print" class="btn-secondary hidden">
                     Imprimer
                 </button>
@@ -58,6 +54,10 @@
 
         <section id="error" class="error hidden">
             <p id="error-message"></p>
+        </section>
+
+        <section id="stats-chart" class="stats-chart hidden">
+            <div id="chart-container" class="chart-container"></div>
         </section>
 
         <section id="results" class="results hidden">

@@ -7,8 +7,9 @@ window.addEventListener('load', async () => {
     const codeSelect = document.getElementById('code-select');
     const dateStart = document.getElementById('date-start');
     const dateEnd = document.getElementById('date-end');
-    const btnCompare = document.getElementById('btn-compare');
     const btnPrint = document.getElementById('btn-print');
+    const statsChart = document.getElementById('stats-chart');
+    const chartContainer = document.getElementById('chart-container');
     const modeToggleContainer = document.getElementById('mode-toggle-container');
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
@@ -53,10 +54,13 @@ window.addEventListener('load', async () => {
         hideLoading();
     }
 
-    // Validate form
+    // Validate form and trigger auto-update
     function validateForm() {
         const valid = codeSelect.value && dateStart.value && dateEnd.value && dateStart.value < dateEnd.value;
-        btnCompare.disabled = !valid;
+        if (valid) {
+            // Auto-trigger comparison when all fields are valid
+            performComparison();
+        }
         return valid;
     }
 
@@ -91,7 +95,7 @@ window.addEventListener('load', async () => {
         }
     }
 
-    // Event listeners
+    // Event listeners - auto-update on change
     codeSelect.addEventListener('change', validateForm);
     dateStart.addEventListener('change', validateForm);
     dateEnd.addEventListener('change', validateForm);
@@ -136,9 +140,6 @@ window.addEventListener('load', async () => {
             showError('Erreur: ' + err.message);
         }
     }
-
-    // Compare button click
-    btnCompare.addEventListener('click', performComparison);
 
     // Print button click - Prepare header and trigger print dialog
     btnPrint.addEventListener('click', () => {
@@ -238,9 +239,8 @@ window.addEventListener('load', async () => {
 
                 // Build external links
                 let externalLinks = '';
-                if (file.legifranceId) {
-                    const legifranceUrl = `https://www.legifrance.gouv.fr/codes/id/${file.legifranceId}/`;
-                    externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+                if (file.legifranceUrl) {
+                    externalLinks += ` <a href="${escapeHtml(file.legifranceUrl)}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
                 }
                 if (detail.fullSha) {
                     const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${repoName}/commit/${detail.fullSha}`;
@@ -337,9 +337,8 @@ window.addEventListener('load', async () => {
 
             // Build external links
             let externalLinks = '';
-            if (file.legifranceId) {
-                const legifranceUrl = `https://www.legifrance.gouv.fr/codes/id/${file.legifranceId}/`;
-                externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+            if (file.legifranceUrl) {
+                externalLinks += ` <a href="${escapeHtml(file.legifranceUrl)}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
             }
             if (file.commitFullSha && file.commitRepoName) {
                 const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${file.commitRepoName}/commit/${file.commitFullSha}`;
@@ -615,10 +614,69 @@ window.addEventListener('load', async () => {
         return div.innerHTML;
     }
 
+    // Render stats chart
+    function renderStatsChart(commits, startDate, endDate) {
+        if (!commits || commits.length === 0) {
+            statsChart.classList.add('hidden');
+            return;
+        }
+
+        // Aggregate stats by date
+        const statsByDate = {};
+        commits.forEach(commit => {
+            const date = commit.date;
+            if (!statsByDate[date]) {
+                statsByDate[date] = { additions: 0, deletions: 0 };
+            }
+            // Estimate from file count (rough approximation)
+            statsByDate[date].additions += commit.files * 5;
+            statsByDate[date].deletions += commit.files * 3;
+        });
+
+        // Create ASCII chart
+        const dates = Object.keys(statsByDate).sort();
+        if (dates.length === 0) {
+            statsChart.classList.add('hidden');
+            return;
+        }
+
+        const maxDelta = Math.max(
+            ...dates.map(d => Math.max(statsByDate[d].additions, statsByDate[d].deletions))
+        );
+        const height = 10;
+        const width = Math.min(80, dates.length * 2);
+
+        // Simple sparkline
+        let chart = '<div class="chart-title">Activité législative</div>';
+        chart += '<div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 0.25rem;">';
+        chart += `<span>${startDate}</span><span>${dates.length} modifications</span><span>${endDate}</span>`;
+        chart += '</div>';
+
+        // Create bar chart
+        chart += '<div style="display: flex; align-items: flex-end; height: 60px; gap: 1px;">';
+        dates.forEach(date => {
+            const adds = statsByDate[date].additions;
+            const dels = statsByDate[date].deletions;
+            const addHeight = Math.round((adds / maxDelta) * 50);
+            const delHeight = Math.round((dels / maxDelta) * 50);
+            chart += `<div style="display: flex; flex-direction: column; flex: 1; min-width: 2px;">`;
+            chart += `<div class="chart-add" style="height: ${addHeight}px; background: var(--color-add-border); border-radius: 1px 1px 0 0;"></div>`;
+            chart += `<div class="chart-del" style="height: ${delHeight}px; background: var(--color-del-border); border-radius: 0 0 1px 1px;"></div>`;
+            chart += `</div>`;
+        });
+        chart += '</div>';
+
+        chartContainer.innerHTML = chart;
+        statsChart.classList.remove('hidden');
+    }
+
     // Refresh view based on current mode
     async function refreshView() {
         results.classList.remove('hidden');
         btnPrint.classList.remove('hidden');
+
+        // Render stats chart
+        renderStatsChart(currentCommits, currentStartDate, currentEndDate);
 
         if (currentMode === 'changes') {
             viewChanges.classList.remove('hidden');
