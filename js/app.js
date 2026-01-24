@@ -257,7 +257,7 @@ window.addEventListener('load', async () => {
         // Aggregate all files from commits
         const allFiles = [];
 
-        for (const commit of commits.slice(0, 10)) { // Limit to 10
+        for (const commit of commits) {
             try {
                 const detail = await API.fetchCommitDetail(repoName, commit.sha);
                 for (const file of detail.files || []) {
