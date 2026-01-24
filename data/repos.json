@@ -17,166 +17,430 @@
   },
   {
     "name": "code_de_deontologie_de_la_police_nationale",
-    "displayName": "Code de déontologie de la police nationale"
+    "displayName": "Code de Deontologie de la Police Nationale"
   },
   {
     "name": "code_de_deontologie_de_la_profession_de_commissaire_aux_comptes",
-    "displayName": "Code de déontologie de la profession de commissaire aux comptes"
+    "displayName": "Code de Deontologie de la Profession de Commissaire aux Comptes"
   },
   {
     "name": "code_de_deontologie_des_agents_de_police_municipale",
-    "displayName": "Code de déontologie des agents de police municipale"
+    "displayName": "Code de Deontologie des Agents de Police Municipale"
   },
   {
     "name": "code_de_deontologie_des_architectes",
-    "displayName": "Code de déontologie des architectes"
+    "displayName": "Code de Deontologie des Architectes"
   },
   {
     "name": "code_de_deontologie_des_chirurgiens-dentistes",
-    "displayName": "Code de déontologie des chirurgiens-dentistes"
+    "displayName": "Code de Deontologie des Chirurgiens-dentistes"
   },
   {
     "name": "code_de_deontologie_des_medecins",
-    "displayName": "Code de déontologie des médecins"
+    "displayName": "Code de Deontologie des Medecins"
   },
   {
     "name": "code_de_deontologie_des_professionnels_de_l_expertise_comptable",
-    "displayName": "Code de déontologie des professionnels de l'expertise comptable"
+    "displayName": "Code de Deontologie des Professionnels de l Expertise Comptable"
   },
   {
     "name": "code_de_deontologie_des_sages-femmes",
-    "displayName": "Code de déontologie des sages-femmes"
+    "displayName": "Code de Deontologie des Sages-femmes"
   },
   {
     "name": "code_de_deontologie_medicale",
-    "displayName": "Code de déontologie médicale"
+    "displayName": "Code de Deontologie Medicale"
   },
   {
     "name": "code_de_deontologie_veterinaire",
-    "displayName": "Code de déontologie vétérinaire"
+    "displayName": "Code de Deontologie Veterinaire"
   },
   {
     "name": "code_de_justice_administrative",
-    "displayName": "Code de justice administrative"
+    "displayName": "Code de Justice Administrative"
   },
   {
     "name": "code_de_justice_militaire",
-    "displayName": "Code de justice militaire"
+    "displayName": "Code de Justice Militaire"
   },
   {
     "name": "code_de_justice_militaire_nouveau",
-    "displayName": "Code de justice militaire (nouveau)"
+    "displayName": "Code de Justice Militaire Nouveau"
   },
   {
     "name": "code_de_l_action_sociale_et_des_familles",
-    "displayName": "Code de l'action sociale et des familles"
+    "displayName": "Code de l Action Sociale et des Familles"
   },
   {
     "name": "code_de_l_artisanat",
-    "displayName": "Code de l'artisanat"
+    "displayName": "Code de l Artisanat"
   },
   {
     "name": "code_de_l_aviation_civile",
-    "displayName": "Code de l'aviation civile"
+    "displayName": "Code de l Aviation Civile"
   },
   {
     "name": "code_de_l_education",
-    "displayName": "Code de l'éducation"
+    "displayName": "Code de l Education"
   },
   {
     "name": "code_de_l_energie",
-    "displayName": "Code de l'énergie"
+    "displayName": "Code de l Energie"
   },
   {
     "name": "code_de_l_enseignement_technique",
-    "displayName": "Code de l'enseignement technique"
+    "displayName": "Code de l Enseignement Technique"
   },
   {
     "name": "code_de_l_entree_et_du_sejour_des_etrangers_et_du_droit_d_asile",
-    "displayName": "Code de l'entrée et du séjour des étrangers et du droit d'asile"
+    "displayName": "Code de l Entree et du Sejour des Etrangers et du Droit d' Asile"
   },
   {
     "name": "code_de_l_environnement",
-    "displayName": "Code de l'environnement"
+    "displayName": "Code de l Environnement"
   },
   {
     "name": "code_de_l_expropriation_pour_cause_d_utilite_publique",
-    "displayName": "Code de l'expropriation pour cause d'utilité publique"
+    "displayName": "Code de l Expropriation pour Cause d' Utilite Publique"
   },
   {
     "name": "code_de_l_industrie_cinematographique",
-    "displayName": "Code de l'industrie cinématographique"
+    "displayName": "Code de l Industrie Cinematographique"
   },
   {
     "name": "code_de_l_office_national_interprofessionnel_du_ble",
-    "displayName": "Code de l'Office national interprofessionnel du blé"
+    "displayName": "Code de l Office National Interprofessionnel du Ble"
   },
   {
     "name": "code_de_l_organisation_judiciaire",
-    "displayName": "Code de l'organisation judiciaire"
+    "displayName": "Code de l Organisation Judiciaire"
   },
   {
     "name": "code_de_l_urbanisme",
-    "displayName": "Code de l'urbanisme"
+    "displayName": "Code de l Urbanisme"
   },
   {
     "name": "code_de_la_commande_publique",
-    "displayName": "Code de la commande publique"
+    "displayName": "Code de la Commande Publique"
   },
   {
     "name": "code_de_la_consommation",
-    "displayName": "Code de la consommation"
+    "displayName": "Code de la Consommation"
   },
   {
     "name": "code_de_la_construction_et_de_l_habitation",
-    "displayName": "Code de la construction et de l'habitation"
+    "displayName": "Code de la Construction et de l Habitation"
   },
   {
     "name": "code_de_la_defense",
-    "displayName": "Code de la défense"
+    "displayName": "Code de la Defense"
   },
   {
     "name": "code_de_la_famille_et_de_l_aide_sociale",
-    "displayName": "Code de la famille et de l'aide sociale"
+    "displayName": "Code de la Famille et de l Aide Sociale"
   },
   {
     "name": "code_de_la_justice_penale_des_mineurs",
-    "displayName": "Code de la justice pénale des mineurs"
+    "displayName": "Code de la Justice Penale des Mineurs"
   },
   {
     "name": "code_de_la_legion_d_honneur_de_la_medaille_militaire_et_de_l_ordre_national_du_merite",
-    "displayName": "Code de la Légion d'honneur, de la Médaille militaire et de l'ordre national du Mérite"
+    "displayName": "Code de la Legion d' Honneur de la Medaille Militaire et de l Ordre National du Merite"
   },
   {
     "name": "code_de_la_legion_d_honneur_et_de_la_medaille_militaire",
-    "displayName": "Code de la légion d'honneur et de la médaille militaire"
+    "displayName": "Code de la Legion d' Honneur et de la Medaille Militaire"
   },
   {
     "name": "code_de_la_mutualite",
-    "displayName": "Code de la mutualité"
+    "displayName": "Code de la Mutualite"
   },
   {
     "name": "code_de_la_nationalite_francaise",
-    "displayName": "Code de la nationalité française"
+    "displayName": "Code de la Nationalite Francaise"
   },
   {
     "name": "code_de_la_propriete_intellectuelle",
-    "displayName": "Code de la propriété intellectuelle"
+    "displayName": "Code de la Propriete Intellectuelle"
   },
   {
     "name": "code_de_la_recherche",
-    "displayName": "Code de la recherche"
+    "displayName": "Code de la Recherche"
   },
   {
     "name": "code_de_la_route",
-    "displayName": "Code de la route"
+    "displayName": "Code de la Route"
   },
   {
     "name": "code_de_la_route_ancien",
-    "displayName": "Code de la route (ancien)"
+    "displayName": "Code de la Route Ancien"
   },
   {
     "name": "code_de_la_sante_publique",
-    "displayName": "Code de la sante publique"
+    "displayName": "Code de la Sante Publique"
+  },
+  {
+    "name": "code_de_la_securite_interieure",
+    "displayName": "Code de la Securite Interieure"
+  },
+  {
+    "name": "code_de_la_securite_sociale",
+    "displayName": "Code de la Securite Sociale"
+  },
+  {
+    "name": "code_de_la_voirie_routiere",
+    "displayName": "Code de la Voirie Routiere"
+  },
+  {
+    "name": "code_de_procedure_civile",
+    "displayName": "Code de Procedure Civile"
+  },
+  {
+    "name": "code_de_procedure_civile_1807",
+    "displayName": "Code de Procedure Civile 1807"
+  },
+  {
+    "name": "code_de_procedure_penale",
+    "displayName": "Code de Procedure Penale"
+  },
+  {
+    "name": "code_des_assurances",
+    "displayName": "Code des Assurances"
+  },
+  {
+    "name": "code_des_caisses_d_epargne",
+    "displayName": "Code des Caisses d' Epargne"
+  },
+  {
+    "name": "code_des_communes",
+    "displayName": "Code des Communes"
+  },
+  {
+    "name": "code_des_communes_de_la_nouvelle-caledonie",
+    "displayName": "Code des Communes de la Nouvelle-caledonie"
+  },
+  {
+    "name": "code_des_debits_de_boissons_et_des_mesures_contre_l_alcoolisme",
+    "displayName": "Code des Debits de Boissons et des Mesures Contre l Alcoolisme"
+  },
+  {
+    "name": "code_des_douanes",
+    "displayName": "Code des Douanes"
+  },
+  {
+    "name": "code_des_douanes_de_mayotte",
+    "displayName": "Code des Douanes de Mayotte"
+  },
+  {
+    "name": "code_des_impositions_sur_les_biens_et_services",
+    "displayName": "Code des Impositions sur les Biens et Services"
+  },
+  {
+    "name": "code_des_instruments_monetaires_et_des_medailles",
+    "displayName": "Code des Instruments Monetaires et des Medailles"
+  },
+  {
+    "name": "code_des_juridictions_financieres",
+    "displayName": "Code des Juridictions Financieres"
+  },
+  {
+    "name": "code_des_marches_publics_edition_1964",
+    "displayName": "Code des Marches Publics Edition 1964"
+  },
+  {
+    "name": "code_des_marches_publics_edition_2001",
+    "displayName": "Code des Marches Publics Edition 2001"
+  },
+  {
+    "name": "code_des_marches_publics_edition_2004",
+    "displayName": "Code des Marches Publics Edition 2004"
+  },
+  {
+    "name": "code_des_marches_publics_edition_2006",
+    "displayName": "Code des Marches Publics Edition 2006"
+  },
+  {
+    "name": "code_des_pensions_civiles_et_militaires_de_retraite",
+    "displayName": "Code des Pensions Civiles et Militaires de Retraite"
+  },
+  {
+    "name": "code_des_pensions_de_retraite_des_marins_francais_du_commerce_de_peche_ou_de_plaisance",
+    "displayName": "Code des Pensions de Retraite des Marins Francais du Commerce de Peche Ou de Plaisance"
+  },
+  {
+    "name": "code_des_pensions_militaires_d_invalidite_et_des_victimes_de_guerre",
+    "displayName": "Code des Pensions Militaires d' Invalidite et des Victimes de Guerre"
+  },
+  {
+    "name": "code_des_pensions_militaires_d_invalidite_et_des_victimes_de_la_guerre",
+    "displayName": "Code des Pensions Militaires d' Invalidite et des Victimes de la Guerre"
+  },
+  {
+    "name": "code_des_ports_maritimes",
+    "displayName": "Code des Ports Maritimes"
+  },
+  {
+    "name": "code_des_postes_et_des_communications_electroniques",
+    "displayName": "Code des Postes et des Communications Electroniques"
+  },
+  {
+    "name": "code_des_procedures_civiles_d_execution",
+    "displayName": "Code des Procedures Civiles d' Execution"
+  },
+  {
+    "name": "code_des_relations_entre_le_public_et_l_administration",
+    "displayName": "Code des Relations Entre le Public et l Administration"
+  },
+  {
+    "name": "code_des_transports",
+    "displayName": "Code des Transports"
+  },
+  {
+    "name": "code_des_tribunaux_administratifs_et_des_cours_administratives_d_appel",
+    "displayName": "Code des Tribunaux Administratifs et des Cours Administratives d' Appel"
+  },
+  {
+    "name": "code_disciplinaire_et_penal_de_la_marine_marchande",
+    "displayName": "Code Disciplinaire et Penal de la Marine Marchande"
+  },
+  {
+    "name": "code_du_ble",
+    "displayName": "Code du Ble"
+  },
+  {
+    "name": "code_du_cinema_et_de_l_image_animee",
+    "displayName": "Code du Cinema et de l Image Animee"
+  },
+  {
+    "name": "code_du_domaine_de_l_etat",
+    "displayName": "Code du Domaine de l Etat"
+  },
+  {
+    "name": "code_du_domaine_etat_et_collectivites_publiques_applicable_a_collectivite_territoriale_mayotte",
+    "displayName": "Code du Domaine Etat et Collectivites Publiques Applicable a Collectivite Territoriale Mayotte"
+  },
+  {
+    "name": "code_du_domaine_public_fluvial_et_de_la_navigation_interieure",
+    "displayName": "Code du Domaine Public Fluvial et de la Navigation Interieure"
+  },
+  {
+    "name": "code_du_patrimoine",
+    "displayName": "Code du Patrimoine"
+  },
+  {
+    "name": "code_du_service_national",
+    "displayName": "Code du Service National"
+  },
+  {
+    "name": "code_du_sport",
+    "displayName": "Code du Sport"
+  },
+  {
+    "name": "code_du_tourisme",
+    "displayName": "Code du Tourisme"
+  },
+  {
+    "name": "code_du_travail",
+    "displayName": "Code du Travail"
+  },
+  {
+    "name": "code_du_travail_applicable_a_mayotte",
+    "displayName": "Code du Travail Applicable a Mayotte"
+  },
+  {
+    "name": "code_du_travail_maritime",
+    "displayName": "Code du Travail Maritime"
+  },
+  {
+    "name": "code_du_vin",
+    "displayName": "Code du Vin"
+  },
+  {
+    "name": "code_electoral",
+    "displayName": "Code Electoral"
+  },
+  {
+    "name": "code_forestier",
+    "displayName": "Code Forestier"
+  },
+  {
+    "name": "code_forestier_de_mayotte",
+    "displayName": "Code Forestier de Mayotte"
+  },
+  {
+    "name": "code_forestier_nouveau",
+    "displayName": "Code Forestier Nouveau"
+  },
+  {
+    "name": "code_general_de_la_fonction_publique",
+    "displayName": "Code General de la Fonction Publique"
+  },
+  {
+    "name": "code_general_de_la_propriete_des_personnes_publiques",
+    "displayName": "Code General de la Propriete des Personnes Publiques"
+  },
+  {
+    "name": "code_general_des_collectivites_territoriales",
+    "displayName": "Code General des Collectivites Territoriales"
+  },
+  {
+    "name": "code_general_des_impots",
+    "displayName": "Code général des impôts"
+  },
+  {
+    "name": "code_general_des_impots_annexe_i",
+    "displayName": "Code général des impôts, annexe I"
+  },
+  {
+    "name": "code_general_des_impots_annexe_ii",
+    "displayName": "Code général des impôts, annexe II"
+  },
+  {
+    "name": "code_general_des_impots_annexe_iii",
+    "displayName": "Code général des impôts, annexe III"
+  },
+  {
+    "name": "code_general_des_impots_annexe_iv",
+    "displayName": "Code général des impôts, annexe IV"
+  },
+  {
+    "name": "code_minier",
+    "displayName": "Code Minier"
+  },
+  {
+    "name": "code_minier_nouveau",
+    "displayName": "Code Minier Nouveau"
+  },
+  {
+    "name": "code_monetaire_et_financier",
+    "displayName": "Code Monetaire et Financier"
+  },
+  {
+    "name": "code_penal",
+    "displayName": "Code Penal"
+  },
+  {
+    "name": "code_penal_ancien",
+    "displayName": "Code Penal Ancien"
+  },
+  {
+    "name": "code_penitentiaire",
+    "displayName": "Code Penitentiaire"
+  },
+  {
+    "name": "code_rural_ancien",
+    "displayName": "Code Rural Ancien"
+  },
+  {
+    "name": "code_rural_et_de_la_peche_maritime",
+    "displayName": "Code Rural et de la Peche Maritime"
+  },
+  {
+    "name": "code_rural_nouveau",
+    "displayName": "Code Rural Nouveau"
+  },
+  {
+    "name": "livre_des_procedures_fiscales",
+    "displayName": "Livre des procédures fiscales"
   }
 ]

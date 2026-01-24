@@ -124,7 +124,7 @@ main {
 }
 
 .controls-row-actions {
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
 }
 
@@ -281,40 +281,6 @@ select:disabled {
 /* Hidden utility */
 .hidden {
     display: none !important;
-}
-
-/* Stats chart */
-.stats-chart {
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-md);
-}
-
-.chart-container {
-    font-family: monospace;
-    font-size: 0.75rem;
-    line-height: 1.2;
-    white-space: pre;
-    overflow-x: auto;
-    color: var(--color-text-secondary);
-}
-
-.chart-container .chart-title {
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-text);
-    margin-bottom: var(--spacing-sm);
-}
-
-.chart-add {
-    color: var(--color-add-text);
-}
-
-.chart-del {
-    color: var(--color-del-text);
 }
 
 /* Results */
@@ -800,7 +766,6 @@ footer a:hover {
     .controls,
     #loading,
     #error,
-    #stats-chart,
     .btn-primary,
     .btn-secondary,
     .mode-toggle-container,
