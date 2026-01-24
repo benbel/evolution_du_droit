@@ -94,10 +94,28 @@ main {
     padding: var(--spacing-md);
     border-radius: var(--radius-md);
     display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.controls-row {
+    display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-md);
     align-items: flex-end;
-    margin-bottom: var(--spacing-md);
+}
+
+.controls-row-code {
+    justify-content: center;
+}
+
+.controls-row-code select {
+    min-width: 300px;
+}
+
+.controls-row-actions {
+    justify-content: flex-start;
 }
 
 .control-group {
@@ -764,6 +782,24 @@ footer a:hover {
     }
 
     /* Print before/after view */
+    .view-before-after {
+        height: auto !important;
+        min-height: auto !important;
+    }
+
+    .view-changes {
+        height: auto !important;
+        min-height: auto !important;
+    }
+
+    .diff-pane {
+        overflow: visible !important;
+    }
+
+    .commit-diff {
+        overflow: visible !important;
+    }
+
     .before-after-sticky-header {
         position: static;
         page-break-after: avoid;

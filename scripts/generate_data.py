@@ -328,6 +328,7 @@ def get_commit_diff(repo_path: Path, sha: str, legifrance_cache: dict = None) ->
 
     return {
         "sha": sha[:12],
+        "fullSha": sha,
         "date": date,
         "message": message,
         "files": file_diffs,
@@ -355,7 +356,7 @@ def is_section_header(content: str) -> bool:
     # Skip reference section headers and everything after them
     if stripped in ["Références", "Autres formats"]:
         return True
-    if stripped.startswith("### Articles faisant référence") or stripped.startswith("### Textes faisant référence"):
+    if stripped.startswith("### Articles faisant référence") or stripped.startswith("### Textes faisant référence") or stripped.startswith("### Références faites par l'article"):
         return True
     if stripped.startswith("## Références") or stripped.startswith("## Autres formats"):
         return True
@@ -380,7 +381,7 @@ def should_skip_content(content: str) -> bool:
     # Skip section headers
     if stripped in ["Références", "Autres formats"]:
         return True
-    if stripped.startswith("### Articles faisant référence") or stripped.startswith("### Textes faisant référence"):
+    if stripped.startswith("### Articles faisant référence") or stripped.startswith("### Textes faisant référence") or stripped.startswith("### Références faites par l'article"):
         return True
     if stripped.startswith("## Références") or stripped.startswith("## Autres formats"):
         return True

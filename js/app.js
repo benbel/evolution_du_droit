@@ -36,11 +36,6 @@ window.addEventListener('load', async () => {
         });
     }
 
-    // Format date for Legifrance URL (YYYYMMDD format)
-    function formatDateForLegifrance(isoDate) {
-        return isoDate.replace(/-/g, '');
-    }
-
     // Show/hide loading
     function showLoading() {
         loading.classList.remove('hidden');
@@ -244,8 +239,7 @@ window.addEventListener('load', async () => {
                 // Build external links
                 let externalLinks = '';
                 if (file.legifranceId) {
-                    const dateFormatted = formatDateForLegifrance(detail.date);
-                    const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}/${dateFormatted}`;
+                    const legifranceUrl = `https://www.legifrance.gouv.fr/codes/id/${file.legifranceId}/`;
                     externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
                 }
                 if (detail.fullSha) {
@@ -343,9 +337,8 @@ window.addEventListener('load', async () => {
 
             // Build external links
             let externalLinks = '';
-            if (file.legifranceId && file.commitDate) {
-                const dateFormatted = formatDateForLegifrance(file.commitDate);
-                const legifranceUrl = `https://www.legifrance.gouv.fr/codes/article_lc/${file.legifranceId}/${dateFormatted}`;
+            if (file.legifranceId) {
+                const legifranceUrl = `https://www.legifrance.gouv.fr/codes/id/${file.legifranceId}/`;
                 externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
             }
             if (file.commitFullSha && file.commitRepoName) {
@@ -523,7 +516,7 @@ window.addEventListener('load', async () => {
         if (trimmed === 'Références' || trimmed === 'Autres formats') {
             return true;
         }
-        if (trimmed.startsWith('### Articles faisant référence') || trimmed.startsWith('### Textes faisant référence')) {
+        if (trimmed.startsWith('### Articles faisant référence') || trimmed.startsWith('### Textes faisant référence') || trimmed.startsWith('### Références faites par l\'article')) {
             return true;
         }
         if (trimmed.startsWith('## Références') || trimmed.startsWith('## Autres formats')) {
