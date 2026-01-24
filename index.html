@@ -14,40 +14,41 @@
 
     <main>
         <section class="controls">
-            <div class="control-group">
-                <label for="code-select">Code juridique</label>
+            <div class="controls-row controls-row-code">
                 <select id="code-select" disabled>
                     <option value="">Chargement des codes...</option>
                 </select>
             </div>
 
-            <div class="control-group">
-                <label for="date-start">Date de début</label>
-                <input type="date" id="date-start">
-            </div>
-
-            <div class="control-group">
-                <label for="date-end">Date de fin</label>
-                <input type="date" id="date-end">
-            </div>
-
-            <div class="control-group">
-                <div class="mode-toggle-container" id="mode-toggle-container">
-                    <span class="mode-label">Avant / Après</span>
-                    <div class="toggle-switch">
-                        <div class="toggle-slider"></div>
-                    </div>
-                    <span class="mode-label">Liste des modifications</span>
+            <div class="controls-row controls-row-actions">
+                <div class="control-group">
+                    <label for="date-start">Date de début</label>
+                    <input type="date" id="date-start">
                 </div>
+
+                <div class="control-group">
+                    <label for="date-end">Date de fin</label>
+                    <input type="date" id="date-end">
+                </div>
+
+                <div class="control-group">
+                    <div class="mode-toggle-container" id="mode-toggle-container">
+                        <span class="mode-label">Avant / Après</span>
+                        <div class="toggle-switch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                        <span class="mode-label">Liste des modifications</span>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-compare" class="btn-primary" disabled>
+                    Comparer
+                </button>
+
+                <button type="button" id="btn-print" class="btn-secondary hidden">
+                    Imprimer
+                </button>
             </div>
-
-            <button type="button" id="btn-compare" class="btn-primary" disabled>
-                Comparer
-            </button>
-
-            <button type="button" id="btn-print" class="btn-secondary hidden">
-                Imprimer
-            </button>
         </section>
 
         <section id="loading" class="loading hidden">
