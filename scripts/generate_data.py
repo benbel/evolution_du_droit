@@ -427,6 +427,14 @@ def should_skip_content(content: str) -> bool:
         if any(keyword in stripped for keyword in ["AUTONOME", "VIGUEUR", "MODIFIE", "CITATION", "CREE", "ENTIEREMENT_MODIF", "CODIFICATION", "cible", "source"]):
             return True
 
+    # Skip CONCORDANCE references (e.g., "CONCORDANCE source Loi 82-595 1983-07-10, art 23")
+    if "CONCORDANCE" in stripped and any(keyword in stripped for keyword in ["cible", "source"]):
+        return True
+
+    # Skip date-based MODIFICATION/CITATION source references (e.g., "2024-10-18 MODIFICATION source Décision...")
+    if re.match(r'^\d{4}-\d{2}-\d{2}\s+(MODIFICATION|CITATION|MODIFIE|CREE)\s+(source|cible)', stripped):
+        return True
+
     return False
 
 

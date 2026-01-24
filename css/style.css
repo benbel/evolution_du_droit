@@ -1,7 +1,14 @@
+/* Fonts - Using Google Fonts with local caching */
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
+
 /* Variables */
 :root {
     --color-primary: #286c44;
     --color-primary-hover: #1f5434;
+
+    /* Typography */
+    --font-body: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-legal: 'EB Garamond', Georgia, 'Times New Roman', serif;
     --color-bg: #ffffff;
     --color-bg-secondary: #ffffff;
     --color-text: #1e293b;
@@ -42,7 +49,7 @@ html {
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-body);
     color: var(--color-text);
     background-color: var(--color-bg-secondary);
     line-height: 1.5;
@@ -117,7 +124,8 @@ main {
 }
 
 .controls-row-actions {
-    justify-content: flex-start;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .control-group {
@@ -225,8 +233,8 @@ select:disabled {
 /* Secondary button */
 .btn-secondary {
     padding: var(--spacing-sm) var(--spacing-lg);
-    background: white;
-    color: var(--color-primary);
+    background: var(--color-primary);
+    color: white;
     border: 1px solid var(--color-primary);
     border-radius: var(--radius-sm);
     font-size: 0.95rem;
@@ -236,8 +244,8 @@ select:disabled {
 }
 
 .btn-secondary:hover {
-    background: var(--color-primary);
-    color: white;
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
 }
 
 /* Loading */
@@ -273,6 +281,40 @@ select:disabled {
 /* Hidden utility */
 .hidden {
     display: none !important;
+}
+
+/* Stats chart */
+.stats-chart {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.chart-container {
+    font-family: monospace;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    white-space: pre;
+    overflow-x: auto;
+    color: var(--color-text-secondary);
+}
+
+.chart-container .chart-title {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+}
+
+.chart-add {
+    color: var(--color-add-text);
+}
+
+.chart-del {
+    color: var(--color-del-text);
 }
 
 /* Results */
@@ -318,9 +360,9 @@ select:disabled {
     flex: 1;
     overflow-y: auto;
     padding: 0;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
-    font-size: 0.85rem;
-    line-height: 1.6;
+    font-family: var(--font-legal);
+    font-size: 1rem;
+    line-height: 1.7;
 }
 
 .diff-right {
@@ -469,9 +511,9 @@ select:disabled {
 .commit-diff {
     flex: 1;
     overflow-y: auto;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
-    font-size: 0.85rem;
-    line-height: 1.6;
+    font-family: var(--font-legal);
+    font-size: 1rem;
+    line-height: 1.7;
 }
 
 /* File separator in diff */
@@ -758,11 +800,25 @@ footer a:hover {
     .controls,
     #loading,
     #error,
+    #stats-chart,
     .btn-primary,
     .btn-secondary,
     .mode-toggle-container,
     .commits-list {
         display: none !important;
+    }
+
+    /* Reduce font size for printing */
+    .diff-pane,
+    .commit-diff,
+    .before-after-table {
+        font-size: 0.75rem !important;
+        line-height: 1.4 !important;
+    }
+
+    .diff-line-content,
+    .before-after-table tbody td {
+        font-size: 0.75rem !important;
     }
 
     /* Optimize page layout */
