@@ -1,14 +1,11 @@
-/* Fonts - Using Google Fonts with local caching */
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
-
 /* Variables */
 :root {
     --color-primary: #286c44;
     --color-primary-hover: #1f5434;
 
-    /* Typography */
-    --font-body: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    --font-legal: 'EB Garamond', Georgia, 'Times New Roman', serif;
+    /* Typography - System fonts */
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-legal: Georgia, 'Times New Roman', serif;
     --color-bg: #ffffff;
     --color-bg-secondary: #ffffff;
     --color-text: #1e293b;
@@ -134,6 +131,14 @@ main {
     gap: var(--spacing-md);
 }
 
+/* Uniform height for all interactive elements in action row */
+.controls-row-actions input[type="date"],
+.controls-row-actions .mode-toggle-container,
+.controls-row-actions .btn-secondary {
+    height: 38px;
+    box-sizing: border-box;
+}
+
 .date-control {
     display: flex;
     flex-direction: column;
@@ -169,12 +174,12 @@ select:disabled, input[type="text"]:disabled {
 
 /* Toggle switch */
 .mode-toggle-container {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: var(--spacing-sm);
     cursor: pointer;
     user-select: none;
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: 0 var(--spacing-md);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-bg);
@@ -240,7 +245,7 @@ select:disabled, input[type="text"]:disabled {
 
 /* Secondary button */
 .btn-secondary {
-    padding: var(--spacing-sm) var(--spacing-lg);
+    padding: 0 var(--spacing-lg);
     background: var(--color-primary);
     color: white;
     border: 1px solid var(--color-primary);
@@ -249,6 +254,9 @@ select:disabled, input[type="text"]:disabled {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-secondary:hover {
