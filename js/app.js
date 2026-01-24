@@ -238,9 +238,8 @@ window.addEventListener('load', async () => {
 
                 // Build external links
                 let externalLinks = '';
-                if (file.legifranceId) {
-                    const legifranceUrl = `https://www.legifrance.gouv.fr/codes/id/${file.legifranceId}/`;
-                    externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+                if (file.legifranceUrl) {
+                    externalLinks += ` <a href="${escapeHtml(file.legifranceUrl)}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
                 }
                 if (detail.fullSha) {
                     const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${repoName}/commit/${detail.fullSha}`;
@@ -337,9 +336,8 @@ window.addEventListener('load', async () => {
 
             // Build external links
             let externalLinks = '';
-            if (file.legifranceId) {
-                const legifranceUrl = `https://www.legifrance.gouv.fr/codes/id/${file.legifranceId}/`;
-                externalLinks += ` <a href="${legifranceUrl}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+            if (file.legifranceUrl) {
+                externalLinks += ` <a href="${escapeHtml(file.legifranceUrl)}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
             }
             if (file.commitFullSha && file.commitRepoName) {
                 const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${file.commitRepoName}/commit/${file.commitFullSha}`;

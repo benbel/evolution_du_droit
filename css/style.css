@@ -104,6 +104,8 @@ main {
     flex-wrap: wrap;
     gap: var(--spacing-md);
     align-items: flex-end;
+    flex-basis: 100%;
+    width: 100%;
 }
 
 .controls-row-code {
@@ -785,19 +787,37 @@ footer a:hover {
     .view-before-after {
         height: auto !important;
         min-height: auto !important;
+        overflow: visible !important;
     }
 
     .view-changes {
         height: auto !important;
         min-height: auto !important;
+        overflow: visible !important;
     }
 
     .diff-pane {
         overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
     }
 
     .commit-diff {
         overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    .commit-detail {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    .changes-container {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
     }
 
     .before-after-sticky-header {
