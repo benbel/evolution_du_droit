@@ -72,11 +72,11 @@ window.addEventListener('load', async () => {
         });
         codeSelect.disabled = false;
 
-        // Load default comparison: Code général des impôts, 01/01/2017 vs 01/01/2026
+        // Load default comparison: Code général des impôts, 01/01/2025 vs 01/01/2026
         const defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
         if (defaultRepo) {
             codeSelect.value = defaultRepo.name;
-            dateStart.value = '2017-01-01';
+            dateStart.value = '2025-01-01';
             dateEnd.value = '2026-01-01';
             validateForm();
             // Trigger comparison automatically using await instead of setTimeout for better browser compatibility
