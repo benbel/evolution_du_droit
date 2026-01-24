@@ -14,6 +14,7 @@ window.addEventListener('load', async () => {
     const error = document.getElementById('error');
     const errorMessage = document.getElementById('error-message');
     const results = document.getElementById('results');
+    const printHeader = document.getElementById('print-header');
     const viewBeforeAfter = document.getElementById('view-before-after');
     const viewChanges = document.getElementById('view-changes');
     const commitsList = document.getElementById('commits-list');
@@ -139,8 +140,22 @@ window.addEventListener('load', async () => {
     // Compare button click
     btnCompare.addEventListener('click', performComparison);
 
-    // Print button click
+    // Print button click - Prepare header and trigger print dialog
     btnPrint.addEventListener('click', () => {
+        // Populate print header with current selection info
+        const codeName = codeSelect.options[codeSelect.selectedIndex]?.text || 'Code juridique';
+        const viewType = currentMode === 'before-after' ? 'Vue Avant / Après' : 'Liste des modifications';
+        const commitsCount = currentCommits.length;
+
+        printHeader.innerHTML = `
+            <h1>${escapeHtml(codeName)}</h1>
+            <p><strong>Période :</strong> ${currentStartDate} - ${currentEndDate}</p>
+            <p><strong>Mode d'affichage :</strong> ${viewType}</p>
+            <p><strong>Nombre de modifications :</strong> ${commitsCount}</p>
+        `;
+
+        // Trigger browser print dialog
+        // User can save as PDF from the print dialog
         window.print();
     });
 
