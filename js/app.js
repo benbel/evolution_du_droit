@@ -4,7 +4,8 @@
 
 window.addEventListener('load', async () => {
     // DOM Elements
-    const codeSelect = document.getElementById('code-select');
+    const codeInput = document.getElementById('code-input');
+    const codeList = document.getElementById('code-list');
     const dateStart = document.getElementById('date-start');
     const dateEnd = document.getElementById('date-end');
     const btnPrint = document.getElementById('btn-print');
@@ -27,6 +28,7 @@ window.addEventListener('load', async () => {
     let currentRepo = null;
     let currentStartDate = null;
     let currentEndDate = null;
+    let reposMap = new Map(); // Map displayName -> repo object
 
     // Format date for display
     function formatDate(dateStr) {
@@ -52,36 +54,59 @@ window.addEventListener('load', async () => {
         hideLoading();
     }
 
-    // Validate form and trigger auto-update
-    function validateForm() {
-        const valid = codeSelect.value && dateStart.value && dateEnd.value && dateStart.value < dateEnd.value;
-        if (valid) {
-            // Auto-trigger comparison when all fields are valid
+    // Get selected repo from input text
+    function getSelectedRepo() {
+        const inputValue = codeInput.value.trim();
+        // Check if it matches a display name
+        if (reposMap.has(inputValue)) {
+            return reposMap.get(inputValue);
+        }
+        // Check if it matches a repo name directly
+        for (const repo of reposMap.values()) {
+            if (repo.name === inputValue) {
+                return repo;
+            }
+        }
+        return null;
+    }
+
+    // Validate form (returns true if all fields are valid)
+    function isFormValid() {
+        const repo = getSelectedRepo();
+        return repo && dateStart.value && dateEnd.value && dateStart.value < dateEnd.value;
+    }
+
+    // Called on form change - validates and triggers comparison if valid
+    function onFormChange() {
+        if (isFormValid()) {
             performComparison();
         }
-        return valid;
     }
 
     // Load repositories
     try {
         const repos = await API.fetchRepositories();
-        codeSelect.innerHTML = '<option value="">Sélectionnez un code...</option>';
+        codeList.innerHTML = '';
+        reposMap.clear();
+
         repos.forEach(repo => {
+            reposMap.set(repo.displayName, repo);
             const opt = document.createElement('option');
-            opt.value = repo.name;
-            opt.textContent = repo.displayName;
-            codeSelect.appendChild(opt);
+            opt.value = repo.displayName;
+            opt.dataset.name = repo.name;
+            codeList.appendChild(opt);
         });
-        codeSelect.disabled = false;
+
+        codeInput.disabled = false;
+        codeInput.placeholder = 'Sélectionnez ou tapez un code...';
 
         // Load default comparison: Code général des impôts, 01/01/2025 vs 01/01/2026
         const defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
         if (defaultRepo) {
-            codeSelect.value = defaultRepo.name;
+            codeInput.value = defaultRepo.displayName;
             dateStart.value = '2025-01-01';
             dateEnd.value = '2026-01-01';
-            validateForm();
-            // Trigger comparison automatically using await instead of setTimeout for better browser compatibility
+            // Trigger comparison automatically
             await performComparison();
         }
     } catch (err) {
@@ -94,9 +119,15 @@ window.addEventListener('load', async () => {
     }
 
     // Event listeners - auto-update on change
-    codeSelect.addEventListener('change', validateForm);
-    dateStart.addEventListener('change', validateForm);
-    dateEnd.addEventListener('change', validateForm);
+    codeInput.addEventListener('change', onFormChange);
+    codeInput.addEventListener('input', () => {
+        // Trigger change when user selects from datalist
+        if (getSelectedRepo()) {
+            onFormChange();
+        }
+    });
+    dateStart.addEventListener('change', onFormChange);
+    dateEnd.addEventListener('change', onFormChange);
 
     // Mode toggle
     modeToggleContainer.addEventListener('click', async () => {
@@ -117,9 +148,10 @@ window.addEventListener('load', async () => {
 
     // Perform comparison
     async function performComparison() {
-        if (!validateForm()) return;
+        if (!isFormValid()) return;
 
-        const repoName = codeSelect.value;
+        const repo = getSelectedRepo();
+        const repoName = repo.name;
         const since = dateStart.value;
         const until = dateEnd.value;
 
@@ -142,7 +174,8 @@ window.addEventListener('load', async () => {
     // Print button click - Prepare header and trigger print dialog
     btnPrint.addEventListener('click', () => {
         // Populate print header with current selection info
-        const codeName = codeSelect.options[codeSelect.selectedIndex]?.text || 'Code juridique';
+        const repo = getSelectedRepo();
+        const codeName = repo ? repo.displayName : 'Code juridique';
         const viewType = currentMode === 'before-after' ? 'Vue Avant / Après' : 'Liste des modifications';
         const commitsCount = currentCommits.length;
 
