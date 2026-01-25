@@ -562,44 +562,6 @@ window.addEventListener('load', async () => {
         return result;
     }
 
-    function renderDiffLinesInContainer(lines, container, showMarkers = true) {
-        // Collapse multiple consecutive empty lines into one
-        const collapsedLines = [];
-        let lastWasEmpty = false;
-
-        for (const line of lines) {
-            const isEmpty = !line.content || line.content.trim() === '';
-
-            if (isEmpty && lastWasEmpty) {
-                // Skip this empty line, we already have one
-                continue;
-            }
-
-            collapsedLines.push(line);
-            lastWasEmpty = isEmpty;
-        }
-
-        // Render lines
-        collapsedLines.forEach(line => {
-            const div = document.createElement('div');
-            div.className = `diff-line diff-line-${line.type}`;
-
-            if (showMarkers) {
-                const marker = document.createElement('span');
-                marker.className = 'diff-line-marker';
-                marker.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ';
-                div.appendChild(marker);
-            }
-
-            const content = document.createElement('span');
-            content.className = 'diff-line-content';
-            content.innerHTML = renderMarkdown(line.content || '');
-
-            div.appendChild(content);
-            container.appendChild(div);
-        });
-    }
-
     function shouldSkipLine(content) {
         if (!content) return false;
         const trimmed = content.trim();
