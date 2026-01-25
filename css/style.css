@@ -57,12 +57,12 @@ body {
 /* Header */
 header {
     background: var(--color-bg);
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: var(--spacing-sm) var(--spacing-xl);
     text-align: center;
 }
 
 header h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--color-text);
     margin-bottom: 0;
@@ -70,7 +70,7 @@ header h1 {
 
 .subtitle {
     color: var(--color-text-secondary);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 }
 
 .subtitle a {
@@ -85,7 +85,7 @@ header h1 {
 /* Main */
 main {
     flex: 1;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
@@ -94,18 +94,18 @@ main {
 /* Controls */
 .controls {
     background: var(--color-bg);
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--radius-md);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
 }
 
 .controls-row {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     align-items: center;
     justify-content: center;
     width: 100%;
@@ -127,34 +127,34 @@ main {
 .controls-row-actions {
     justify-content: center;
     align-items: flex-end;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 }
 
 /* Uniform height for all interactive elements in action row */
 .controls-row-actions input[type="date"],
 .controls-row-actions .mode-toggle-container,
 .controls-row-actions .btn-secondary {
-    height: 38px;
+    height: 34px;
     box-sizing: border-box;
 }
 
 .date-control {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: 2px;
 }
 
 .date-control label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--color-text-secondary);
 }
 
 select, input[type="date"], input[type="text"] {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--color-text);
     background: var(--color-bg);
     min-width: 200px;
@@ -242,12 +242,12 @@ select:disabled, input[type="text"]:disabled {
     cursor: not-allowed;
 }
 
-/* Secondary button */
+/* Secondary button (Print button) */
 .btn-secondary {
     padding: 0 var(--spacing-lg);
-    background: var(--color-primary);
-    color: white;
-    border: 1px solid var(--color-primary);
+    background: white;
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     font-size: 0.95rem;
     font-weight: 500;
@@ -259,8 +259,8 @@ select:disabled, input[type="text"]:disabled {
 }
 
 .btn-secondary:hover {
-    background: var(--color-primary-hover);
-    border-color: var(--color-primary-hover);
+    background: var(--color-bg-secondary);
+    border-color: var(--color-primary);
 }
 
 /* Loading */
@@ -310,7 +310,7 @@ select:disabled, input[type="text"]:disabled {
 .view-before-after {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 350px);
+    height: calc(100vh - 240px);
     min-height: 400px;
 }
 
@@ -391,7 +391,7 @@ select:disabled, input[type="text"]:disabled {
 .view-changes {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 350px);
+    height: calc(100vh - 240px);
     min-height: 400px;
 }
 

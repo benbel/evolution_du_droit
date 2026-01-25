@@ -271,13 +271,16 @@ window.addEventListener('load', async () => {
 
                 let fileName = escapeHtml(file.articleName || file.filename);
 
-                // Build external links
+                // Build external links with dated URLs
                 let externalLinks = '';
-                if (file.legifranceUrl) {
-                    externalLinks += ` <a href="${escapeHtml(file.legifranceUrl)}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
+                // Use dated Legifrance URL
+                const legiUrl = buildLegifranceUrlWithDate(file.legifranceUrl, detail.date);
+                if (legiUrl) {
+                    externalLinks += ` <a href="${escapeHtml(legiUrl)}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
                 }
-                if (detail.fullSha) {
-                    const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${repoName}/commit/${detail.fullSha}`;
+                // Use file-specific Tricoteuses URL
+                if (detail.fullSha && file.filename) {
+                    const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${repoName}/src/commit/${detail.fullSha}/${file.filename}`;
                     externalLinks += ` <a href="${tricoteusesUrl}" target="_blank" rel="noopener" class="external-link">↗ Tricoteuses</a>`;
                 }
                 fileName += externalLinks;
@@ -359,12 +362,12 @@ window.addEventListener('load', async () => {
     }
 
     // Helper to build Legifrance URL with date
-    // Format: https://www.legifrance.gouv.fr/codes/id/{LEGIARTI}/{YYYY-MM-DD}/
+    // Format: https://www.legifrance.gouv.fr/codes/article_lc/{LEGIARTI}/{YYYY-MM-DD}
     function buildLegifranceUrlWithDate(legifranceUrl, isoDate) {
         if (!legifranceUrl || !isoDate) return null;
         const legiId = extractLegifranceId(legifranceUrl);
         if (!legiId) return null;
-        return `https://www.legifrance.gouv.fr/codes/id/${legiId}/${isoDate}/`;
+        return `https://www.legifrance.gouv.fr/codes/article_lc/${legiId}/${isoDate}`;
     }
 
     function renderBeforeAfterTables(files, container, startDate, endDate, startDateISO, endDateISO) {
