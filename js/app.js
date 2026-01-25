@@ -102,11 +102,10 @@ window.addEventListener('load', async () => {
         codeInput.disabled = false;
         codeInput.placeholder = 'Sélectionnez ou tapez un code...';
 
-        // Load default comparison: Code général des impôts, 01/01/2025 vs 01/01/2026
         const defaultRepo = repos.find(repo => repo.name === 'code_general_des_impots');
         if (defaultRepo) {
             codeInput.value = defaultRepo.displayName;
-            dateStart.value = '2025-01-01';
+            dateStart.value = '2025-12-01';
             dateEnd.value = '2026-01-01';
             // Trigger comparison automatically
             await performComparison();
