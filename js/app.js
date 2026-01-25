@@ -28,6 +28,8 @@ window.addEventListener('load', async () => {
     let currentRepo = null;
     let currentStartDate = null;
     let currentEndDate = null;
+    let currentStartDateISO = null;  // ISO format (YYYY-MM-DD) for URLs
+    let currentEndDateISO = null;    // ISO format (YYYY-MM-DD) for URLs
     let reposMap = new Map(); // Map displayName -> repo object
 
     // Format date for display
@@ -162,6 +164,8 @@ window.addEventListener('load', async () => {
             currentRepo = repoName;
             currentStartDate = formatDate(since);
             currentEndDate = formatDate(until);
+            currentStartDateISO = since;  // Store ISO format for URLs
+            currentEndDateISO = until;    // Store ISO format for URLs
 
             hideLoading();
             await refreshView();
@@ -299,7 +303,7 @@ window.addEventListener('load', async () => {
     }
 
     // Render side-by-side view from multiple commits
-    async function renderBeforeAfterView(repoName, commits, startDate, endDate) {
+    async function renderBeforeAfterView(repoName, commits, startDate, endDate, startDateISO, endDateISO) {
         if (commits.length === 0) {
             diffLeft.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
             return;
@@ -308,31 +312,63 @@ window.addEventListener('load', async () => {
         // Show loading spinner while fetching commits
         diffLeft.innerHTML = '<div class="loading"><div class="spinner"></div><p>Chargement des modifications...</p></div>';
 
-        // Aggregate all files from commits
-        const allFiles = [];
+        // Aggregate all files from commits, tracking first and last commits for each file
+        const fileMap = new Map(); // filename -> file data with first/last commits
 
         for (const commit of commits) {
             try {
                 const detail = await API.fetchCommitDetail(repoName, commit.sha);
                 for (const file of detail.files || []) {
-                    // Enrich file with commit information for links
-                    allFiles.push({
-                        ...file,
-                        commitDate: detail.date,
-                        commitFullSha: detail.fullSha,
-                        commitRepoName: repoName
-                    });
+                    const key = file.filename;
+                    if (!fileMap.has(key)) {
+                        // First occurrence of this file
+                        fileMap.set(key, {
+                            ...file,
+                            commitDate: detail.date,
+                            commitFullSha: detail.fullSha,
+                            firstCommitSha: detail.fullSha,
+                            lastCommitSha: detail.fullSha,
+                            commitRepoName: repoName
+                        });
+                    } else {
+                        // Update last commit for this file
+                        const existing = fileMap.get(key);
+                        existing.lastCommitSha = detail.fullSha;
+                        // Also merge diff if needed (keep latest version)
+                        existing.diff = file.diff;
+                        existing.additions = file.additions;
+                        existing.deletions = file.deletions;
+                    }
                 }
             } catch (e) {
                 console.error('Error loading commit:', e);
             }
         }
 
+        const allFiles = Array.from(fileMap.values());
+
         // Render each file as a separate table
-        renderBeforeAfterTables(allFiles, diffLeft, startDate, endDate);
+        renderBeforeAfterTables(allFiles, diffLeft, startDate, endDate, startDateISO, endDateISO);
     }
 
-    function renderBeforeAfterTables(files, container, startDate, endDate) {
+    // Helper to extract LEGIARTI ID from Legifrance URL
+    function extractLegifranceId(url) {
+        if (!url) return null;
+        // Match LEGIARTI followed by 12+ digits
+        const match = url.match(/LEGIARTI\d{12,}/);
+        return match ? match[0] : null;
+    }
+
+    // Helper to build Legifrance URL with date
+    // Format: https://www.legifrance.gouv.fr/codes/id/{LEGIARTI}/{YYYY-MM-DD}/
+    function buildLegifranceUrlWithDate(legifranceUrl, isoDate) {
+        if (!legifranceUrl || !isoDate) return null;
+        const legiId = extractLegifranceId(legifranceUrl);
+        if (!legiId) return null;
+        return `https://www.legifrance.gouv.fr/codes/id/${legiId}/${isoDate}/`;
+    }
+
+    function renderBeforeAfterTables(files, container, startDate, endDate, startDateISO, endDateISO) {
         container.innerHTML = '';
 
         if (files.length === 0) {
@@ -359,32 +395,61 @@ window.addEventListener('load', async () => {
             // Create header with article title spanning both columns
             const thead = document.createElement('thead');
 
-            // Title row (with Légifrance and Tricoteuses links if available)
+            // Title row
             const titleRow = document.createElement('tr');
             const titleCell = document.createElement('th');
             titleCell.colSpan = 2;
-
-            let titleHTML = escapeHtml(file.articleName || file.filename);
-
-            // Build external links
-            let externalLinks = '';
-            if (file.legifranceUrl) {
-                externalLinks += ` <a href="${escapeHtml(file.legifranceUrl)}" target="_blank" rel="noopener" class="external-link">↗ Légifrance</a>`;
-            }
-            if (file.commitFullSha && file.commitRepoName) {
-                const tricoteusesUrl = `https://git.tricoteuses.fr/codes/${file.commitRepoName}/commit/${file.commitFullSha}`;
-                externalLinks += ` <a href="${tricoteusesUrl}" target="_blank" rel="noopener" class="external-link">↗ Tricoteuses</a>`;
-            }
-            titleHTML += externalLinks;
-
-            titleCell.innerHTML = titleHTML;
+            titleCell.innerHTML = escapeHtml(file.articleName || file.filename);
             titleCell.style.textAlign = 'center';
             titleCell.style.fontSize = '1.1em';
-            titleCell.style.padding = '0.75em';
+            titleCell.style.padding = '0.75em 0.75em 0.25em 0.75em';
             titleCell.style.borderTop = '2px solid var(--color-border)';
             titleRow.appendChild(titleCell);
             thead.appendChild(titleRow);
 
+            // Links row - one cell per column with dated links
+            const linksRow = document.createElement('tr');
+            linksRow.className = 'article-links-row';
+
+            // Left column links (before - start date)
+            const linksLeftCell = document.createElement('th');
+            linksLeftCell.style.textAlign = 'center';
+            linksLeftCell.style.padding = '0.25em 0.5em 0.75em 0.5em';
+            linksLeftCell.style.fontWeight = 'normal';
+            linksLeftCell.style.fontSize = '0.85em';
+
+            let leftLinks = [];
+            const legiUrlBefore = buildLegifranceUrlWithDate(file.legifranceUrl, startDateISO);
+            if (legiUrlBefore) {
+                leftLinks.push(`<a href="${escapeHtml(legiUrlBefore)}" target="_blank" rel="noopener" class="external-link">Légifrance</a>`);
+            }
+            if (file.commitRepoName && file.filename && file.firstCommitSha) {
+                const gitUrlBefore = `https://git.tricoteuses.fr/codes/${file.commitRepoName}/src/commit/${file.firstCommitSha}/${file.filename}`;
+                leftLinks.push(`<a href="${escapeHtml(gitUrlBefore)}" target="_blank" rel="noopener" class="external-link">Tricoteuses</a>`);
+            }
+            linksLeftCell.innerHTML = leftLinks.length > 0 ? leftLinks.join(' · ') : '';
+            linksRow.appendChild(linksLeftCell);
+
+            // Right column links (after - end date)
+            const linksRightCell = document.createElement('th');
+            linksRightCell.style.textAlign = 'center';
+            linksRightCell.style.padding = '0.25em 0.5em 0.75em 0.5em';
+            linksRightCell.style.fontWeight = 'normal';
+            linksRightCell.style.fontSize = '0.85em';
+
+            let rightLinks = [];
+            const legiUrlAfter = buildLegifranceUrlWithDate(file.legifranceUrl, endDateISO);
+            if (legiUrlAfter) {
+                rightLinks.push(`<a href="${escapeHtml(legiUrlAfter)}" target="_blank" rel="noopener" class="external-link">Légifrance</a>`);
+            }
+            if (file.commitRepoName && file.filename && file.lastCommitSha) {
+                const gitUrlAfter = `https://git.tricoteuses.fr/codes/${file.commitRepoName}/src/commit/${file.lastCommitSha}/${file.filename}`;
+                rightLinks.push(`<a href="${escapeHtml(gitUrlAfter)}" target="_blank" rel="noopener" class="external-link">Tricoteuses</a>`);
+            }
+            linksRightCell.innerHTML = rightLinks.length > 0 ? rightLinks.join(' · ') : '';
+            linksRow.appendChild(linksRightCell);
+
+            thead.appendChild(linksRow);
             table.appendChild(thead);
 
             // Create body
@@ -684,7 +749,7 @@ window.addEventListener('load', async () => {
         } else {
             viewBeforeAfter.classList.remove('hidden');
             viewChanges.classList.add('hidden');
-            await renderBeforeAfterView(currentRepo, currentCommits, currentStartDate, currentEndDate);
+            await renderBeforeAfterView(currentRepo, currentCommits, currentStartDate, currentEndDate, currentStartDateISO, currentEndDateISO);
         }
     }
 
