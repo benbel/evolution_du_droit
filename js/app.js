@@ -21,6 +21,7 @@ window.addEventListener('load', async () => {
     const commitHeader = document.getElementById('commit-header');
     const commitDiff = document.getElementById('commit-diff');
     const diffLeft = document.getElementById('diff-left');
+    const articleFilterInput = document.getElementById('article-filter');
 
     // State
     let currentMode = 'before-after';
@@ -31,6 +32,9 @@ window.addEventListener('load', async () => {
     let currentStartDateISO = null;  // ISO format (YYYY-MM-DD) for URLs
     let currentEndDateISO = null;    // ISO format (YYYY-MM-DD) for URLs
     let reposMap = new Map(); // Map displayName -> repo object
+    let currentArticleFilter = '';   // Article name filter (lowercase)
+    let cachedAllFiles = null;       // Cached files for before/after re-filtering
+    let currentSelectedCommit = null; // Currently selected commit in changes view
 
     // Format date for display
     function formatDate(dateStr) {
@@ -130,6 +134,18 @@ window.addEventListener('load', async () => {
     dateStart.addEventListener('change', onFormChange);
     dateEnd.addEventListener('change', onFormChange);
 
+    // Article filter
+    articleFilterInput.addEventListener('input', () => {
+        currentArticleFilter = articleFilterInput.value.trim().toLowerCase();
+        if (currentCommits.length > 0 && currentRepo) {
+            if (currentMode === 'before-after' && cachedAllFiles) {
+                applyBeforeAfterFilter();
+            } else if (currentMode === 'changes' && currentSelectedCommit) {
+                renderCommitDetail(currentRepo, currentSelectedCommit);
+            }
+        }
+    });
+
     // Mode toggle
     modeToggleContainer.addEventListener('click', async () => {
         // Toggle mode
@@ -157,6 +173,8 @@ window.addEventListener('load', async () => {
         const until = dateEnd.value;
 
         showLoading();
+        cachedAllFiles = null;
+        currentSelectedCommit = null;
 
         try {
             currentCommits = await API.fetchCommits(repoName, since, until);
@@ -265,7 +283,17 @@ window.addEventListener('load', async () => {
                 return;
             }
 
-            detail.files.forEach(file => {
+            const filesToRender = currentArticleFilter
+                ? detail.files.filter(f =>
+                    (f.articleName || f.filename || '').toLowerCase().includes(currentArticleFilter))
+                : detail.files;
+
+            if (filesToRender.length === 0) {
+                commitDiff.innerHTML = '<div class="no-results"><p>Aucun article ne correspond au filtre.</p></div>';
+                return;
+            }
+
+            filesToRender.forEach(file => {
                 const header = document.createElement('div');
                 header.className = 'diff-file-header';
 
@@ -307,6 +335,7 @@ window.addEventListener('load', async () => {
     // Render side-by-side view from multiple commits
     async function renderBeforeAfterView(repoName, commits, startDate, endDate, startDateISO, endDateISO) {
         if (commits.length === 0) {
+            cachedAllFiles = [];
             diffLeft.innerHTML = '<div class="no-results"><p>Aucune modification.</p></div>';
             return;
         }
@@ -347,10 +376,20 @@ window.addEventListener('load', async () => {
             }
         }
 
-        const allFiles = Array.from(fileMap.values());
+        cachedAllFiles = Array.from(fileMap.values());
 
-        // Render each file as a separate table
-        renderBeforeAfterTables(allFiles, diffLeft, startDate, endDate, startDateISO, endDateISO);
+        // Render with current filter
+        applyBeforeAfterFilter();
+    }
+
+    // Apply article filter and render before/after tables (no re-fetch)
+    function applyBeforeAfterFilter() {
+        const filter = currentArticleFilter;
+        const files = filter
+            ? cachedAllFiles.filter(f =>
+                (f.articleName || f.filename || '').toLowerCase().includes(filter))
+            : cachedAllFiles;
+        renderBeforeAfterTables(files, diffLeft, currentStartDate, currentEndDate, currentStartDateISO, currentEndDateISO);
     }
 
     // Helper to extract LEGIARTI ID from Legifrance URL
@@ -703,6 +742,7 @@ window.addEventListener('load', async () => {
                 li.addEventListener('click', () => {
                     commitsList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
                     li.classList.add('active');
+                    currentSelectedCommit = commit;
                     renderCommitDetail(currentRepo, commit);
                 });
                 commitsList.appendChild(li);
