@@ -284,8 +284,7 @@ window.addEventListener('load', async () => {
             }
 
             const filesToRender = currentArticleFilter
-                ? detail.files.filter(f =>
-                    (f.articleName || f.filename || '').toLowerCase().includes(currentArticleFilter))
+                ? detail.files.filter(f => fileMatchesFilter(f, currentArticleFilter))
                 : detail.files;
 
             if (filesToRender.length === 0) {
@@ -382,12 +381,23 @@ window.addEventListener('load', async () => {
         applyBeforeAfterFilter();
     }
 
+    // Check if a file matches the current article filter (name or any diff line content)
+    function fileMatchesFilter(file, filter) {
+        if (!filter) return true;
+        if ((file.articleName || file.filename || '').toLowerCase().includes(filter)) return true;
+        if (file.diff) {
+            for (const line of file.diff) {
+                if (line.content && line.content.toLowerCase().includes(filter)) return true;
+            }
+        }
+        return false;
+    }
+
     // Apply article filter and render before/after tables (no re-fetch)
     function applyBeforeAfterFilter() {
         const filter = currentArticleFilter;
         const files = filter
-            ? cachedAllFiles.filter(f =>
-                (f.articleName || f.filename || '').toLowerCase().includes(filter))
+            ? cachedAllFiles.filter(f => fileMatchesFilter(f, filter))
             : cachedAllFiles;
         renderBeforeAfterTables(files, diffLeft, currentStartDate, currentEndDate, currentStartDateISO, currentEndDateISO);
     }
