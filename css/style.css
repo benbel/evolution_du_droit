@@ -124,13 +124,16 @@ main {
     max-width: 360px;
 }
 
-.code-selector-wrapper label {
+.code-selector-wrapper label,
+.date-control label,
+.article-filter-wrapper label {
     font-size: 0.72rem;
     font-weight: 500;
     color: var(--color-text-secondary);
 }
 
-.code-selector-wrapper input {
+.code-selector-wrapper input,
+.article-filter-wrapper input {
     width: 100%;
 }
 
@@ -138,12 +141,6 @@ main {
     display: flex;
     flex-direction: column;
     gap: 2px;
-}
-
-.date-control label {
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
 }
 
 /* Article filter */
@@ -154,16 +151,6 @@ main {
     min-width: 160px;
     flex: 1;
     max-width: 260px;
-}
-
-.article-filter-wrapper label {
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-}
-
-.article-filter-wrapper input {
-    width: 100%;
 }
 
 select, input[type="date"], input[type="text"] {
