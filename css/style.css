@@ -41,7 +41,7 @@
 
 /* Base */
 html {
-    font-size: 16px;
+    font-size: 12px;
 }
 
 body {
@@ -116,10 +116,18 @@ main {
 }
 
 .code-selector-wrapper {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     min-width: 240px;
     flex: 2;
     max-width: 360px;
+}
+
+.code-selector-wrapper label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
 }
 
 .code-selector-wrapper input {
