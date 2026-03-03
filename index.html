@@ -14,16 +14,16 @@
 
     <main>
         <section class="controls">
-            <!-- Row A: Code selector (searchable) -->
-            <div class="controls-row controls-row-code">
+            <!-- Single row: code selector, dates, mode toggle, article filter, print -->
+            <div class="controls-row">
                 <div class="code-selector-wrapper">
                     <input type="text" id="code-input" list="code-list" placeholder="Chargement des codes..." disabled autocomplete="off">
                     <datalist id="code-list"></datalist>
                 </div>
-            </div>
-
-            <!-- Row B+C: Date controls + toggle + print -->
-            <div class="controls-row controls-row-actions">
+                <div class="article-filter-wrapper">
+                    <label for="article-filter">Filtrer les articles</label>
+                    <input type="text" id="article-filter" placeholder="Tous les articles...">
+                </div>
                 <div class="date-control">
                     <label for="date-start">Date de début</label>
                     <input type="date" id="date-start">
@@ -78,13 +78,6 @@
                     </div>
                 </div>
             </div>
-        </section>
-
-        <section id="file-selector" class="file-selector hidden">
-            <label for="file-select">Fichier à afficher</label>
-            <select id="file-select">
-                <option value="">Tous les fichiers modifiés</option>
-            </select>
         </section>
     </main>
 

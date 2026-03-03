@@ -57,20 +57,27 @@ body {
 /* Header */
 header {
     background: var(--color-bg);
-    padding: var(--spacing-sm) var(--spacing-xl);
-    text-align: center;
+    padding: var(--spacing-xs) var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--color-border);
 }
 
 header h1 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--color-text);
-    margin-bottom: 0;
+    margin: 0;
+    white-space: nowrap;
 }
 
 .subtitle {
     color: var(--color-text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    margin: 0;
 }
 
 .subtitle a {
@@ -85,8 +92,8 @@ header h1 {
 /* Main */
 main {
     flex: 1;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    max-width: 1400px;
+    padding: var(--spacing-xs) var(--spacing-lg);
+    max-width: 1600px;
     margin: 0 auto;
     width: 100%;
 }
@@ -94,48 +101,29 @@ main {
 /* Controls */
 .controls {
     background: var(--color-bg);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-md);
     border-radius: var(--radius-md);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
 }
 
 .controls-row {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-sm);
-    align-items: center;
+    gap: var(--spacing-xs);
+    align-items: flex-end;
     justify-content: center;
     width: 100%;
-}
-
-.controls-row-code {
-    justify-content: center;
 }
 
 .code-selector-wrapper {
     position: relative;
-    min-width: 400px;
+    min-width: 240px;
+    flex: 2;
+    max-width: 360px;
 }
 
 .code-selector-wrapper input {
     width: 100%;
-}
-
-.controls-row-actions {
-    justify-content: center;
-    align-items: flex-end;
-    gap: var(--spacing-sm);
-}
-
-/* Uniform height for all interactive elements in action row */
-.controls-row-actions input[type="date"],
-.controls-row-actions .mode-toggle-container,
-.controls-row-actions .btn-secondary {
-    height: 34px;
-    box-sizing: border-box;
 }
 
 .date-control {
@@ -145,25 +133,47 @@ main {
 }
 
 .date-control label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 500;
     color: var(--color-text-secondary);
 }
 
+/* Article filter */
+.article-filter-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 160px;
+    flex: 1;
+    max-width: 260px;
+}
+
+.article-filter-wrapper label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.article-filter-wrapper input {
+    width: 100%;
+}
+
 select, input[type="date"], input[type="text"] {
-    padding: var(--spacing-xs) var(--spacing-sm);
+    padding: 3px 6px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     color: var(--color-text);
     background: var(--color-bg);
-    min-width: 200px;
+    min-width: 0;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 select:focus, input[type="date"]:focus, input[type="text"]:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 2px rgba(40, 108, 68, 0.15);
 }
 
 select:disabled, input[type="text"]:disabled {
@@ -175,33 +185,37 @@ select:disabled, input[type="text"]:disabled {
 .mode-toggle-container {
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 5px;
     cursor: pointer;
     user-select: none;
-    padding: 0 var(--spacing-md);
+    padding: 0 var(--spacing-sm);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-bg);
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .mode-label {
-    font-size: 0.875rem;
+    font-size: 0.78rem;
     color: var(--color-text);
     transition: color 0.2s ease;
+    white-space: nowrap;
 }
 
 .toggle-switch {
-    width: 48px;
-    height: 24px;
+    width: 36px;
+    height: 18px;
     background: var(--color-border);
-    border-radius: 12px;
+    border-radius: 9px;
     position: relative;
     transition: background 0.2s ease;
+    flex-shrink: 0;
 }
 
 .toggle-slider {
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
     background: white;
     border-radius: 50%;
     position: absolute;
@@ -212,7 +226,7 @@ select:disabled, input[type="text"]:disabled {
 }
 
 .mode-toggle-container.mode-changes .toggle-slider {
-    transform: translateX(24px);
+    transform: translateX(18px);
 }
 
 .mode-toggle-container.mode-changes .toggle-switch {
@@ -221,16 +235,17 @@ select:disabled, input[type="text"]:disabled {
 
 /* Primary button */
 .btn-primary {
-    padding: var(--spacing-sm) var(--spacing-lg);
+    padding: 3px var(--spacing-md);
     background: var(--color-primary);
     color: white;
     border: none;
     border-radius: var(--radius-sm);
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
     transition: background 0.15s ease;
-    margin-left: auto;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -244,18 +259,21 @@ select:disabled, input[type="text"]:disabled {
 
 /* Secondary button (Print button) */
 .btn-secondary {
-    padding: 0 var(--spacing-lg);
+    padding: 0 var(--spacing-md);
     background: white;
     color: var(--color-primary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    height: 28px;
+    box-sizing: border-box;
+    white-space: nowrap;
 }
 
 .btn-secondary:hover {
@@ -310,7 +328,7 @@ select:disabled, input[type="text"]:disabled {
 .view-before-after {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 240px);
+    height: calc(100vh - 110px);
     min-height: 400px;
 }
 
@@ -391,7 +409,7 @@ select:disabled, input[type="text"]:disabled {
 .view-changes {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 240px);
+    height: calc(100vh - 110px);
     min-height: 400px;
 }
 
@@ -641,16 +659,22 @@ footer a:hover {
 
 /* Responsive */
 @media (max-width: 900px) {
-    .controls {
+    .controls-row {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .control-group,
-    .date-control,
-    .code-selector-wrapper {
-        width: 100%;
+    .code-selector-wrapper,
+    .article-filter-wrapper {
+        max-width: none;
+        flex: none;
         min-width: auto;
+    }
+
+    .date-control,
+    .code-selector-wrapper,
+    .article-filter-wrapper {
+        width: 100%;
     }
 
     select, input[type="date"], input[type="text"] {
@@ -658,13 +682,16 @@ footer a:hover {
         min-width: auto;
     }
 
-    .controls-row-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
     .mode-toggle-container {
         justify-content: center;
+        height: auto;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .btn-secondary {
+        width: 100%;
+        height: auto;
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
 
     .changes-container {
