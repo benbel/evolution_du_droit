@@ -38,12 +38,15 @@ def fetch_repo_list() -> list:
                 if not data:
                     break
                 for repo in data:
-                    if repo.get('name'):
+                    if repo.get('empty'):
+                        print(f"Skipping empty repository {repo['name']}")
+                    elif repo.get('name'):
                         repos.append(repo['name'])
                 page += 1
         except Exception as e:
             print(f"Error fetching page {page}: {e}")
-            break
+            print("The repository list is incomplete: stopping rather than publishing partial data.")
+            sys.exit(1)
 
     repos = sorted(set(repos))
     print(f"Found {len(repos)} repositories")
@@ -116,13 +119,17 @@ def main():
             print("No repositories found!")
             sys.exit(1)
 
-        success_count = 0
+        failed_repos = []
         for i, repo_name in enumerate(repos, 1):
-            if clone_or_update_repo(repo_name, i, len(repos)):
-                success_count += 1
+            if not clone_or_update_repo(repo_name, i, len(repos)):
+                failed_repos.append(repo_name)
 
         print(f"\n=== Repository download complete ===")
-        print(f"Successfully processed {success_count}/{len(repos)} repositories")
+        print(f"Successfully processed {len(repos) - len(failed_repos)}/{len(repos)} repositories")
+        if failed_repos:
+            print(f"Failed: {', '.join(failed_repos)}")
+            print("Stopping rather than publishing partial data.")
+            sys.exit(1)
     else:
         print("=== Skipping repository download (--update-only) ===")
 
