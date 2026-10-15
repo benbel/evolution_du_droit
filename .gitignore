@@ -10,3 +10,8 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Built by run.sh, published by CI
+/data/
+/_site/
+__pycache__/

@@ -701,6 +701,7 @@ def main():
 
     total_commits = 0
     total_details = 0
+    failed_details = []
     for idx, repo in enumerate(repos):
         repo_name = repo["name"]
         repo_path = CODES_DIR / repo_name
@@ -747,13 +748,18 @@ def main():
                 if (i + 1) % 100 == 0:
                     print(f"    {i+1}/{len(commits)} commits processed")
             except Exception as e:
-                print(f"  Warning: Failed to get diff for {sha[:12]}: {e}")
+                print(f"  Error: Failed to get diff for {sha[:12]}: {e}")
+                failed_details.append(f"{repo_name}/{sha[:12]}")
 
         print(f"  Generated {len(commits)} detail files")
 
     print(f"\n=== Done! ===")
     print(f"Total: {total_commits} commits, {total_details} detail files")
     print(f"Data stored in {DATA_DIR}")
+
+    if failed_details:
+        print(f"\n{len(failed_details)} detail files could not be generated: {', '.join(failed_details)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

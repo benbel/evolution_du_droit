@@ -11,6 +11,7 @@ Options:
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +22,7 @@ CODES_DIR = PROJECT_DIR / "codes"
 DATA_DIR = PROJECT_DIR / "data"
 API_URL = "https://git.tricoteuses.fr/api/v1"
 ORG = "codes"
+CLONE_ATTEMPTS = 3
 
 
 def fetch_repo_list() -> list:
@@ -38,12 +40,15 @@ def fetch_repo_list() -> list:
                 if not data:
                     break
                 for repo in data:
-                    if repo.get('name'):
+                    if repo.get('empty'):
+                        print(f"Skipping empty repository {repo['name']}")
+                    elif repo.get('name'):
                         repos.append(repo['name'])
                 page += 1
         except Exception as e:
             print(f"Error fetching page {page}: {e}")
-            break
+            print("The repository list is incomplete: stopping rather than publishing partial data.")
+            sys.exit(1)
 
     repos = sorted(set(repos))
     print(f"Found {len(repos)} repositories")
@@ -87,18 +92,21 @@ def clone_or_update_repo(repo_name: str, current: int, total: int) -> bool:
             print(f"Warning: Update failed for {repo_name}: {e}")
             return False
     else:
-        print("Cloning new repo...")
-        try:
-            repo_url = f"https://git.tricoteuses.fr/{ORG}/{repo_name}.git"
-            subprocess.run(
-                ["git", "clone", "--quiet", repo_url, str(repo_path)],
-                check=True,
-                timeout=300
-            )
-            return True
-        except Exception as e:
-            print(f"Warning: Clone failed for {repo_name}: {e}")
-            return False
+        repo_url = f"https://git.tricoteuses.fr/{ORG}/{repo_name}.git"
+        for attempt in range(1, CLONE_ATTEMPTS + 1):
+            print(f"Cloning new repo (attempt {attempt}/{CLONE_ATTEMPTS})...")
+            shutil.rmtree(repo_path, ignore_errors=True)
+            try:
+                subprocess.run(
+                    ["git", "clone", "--quiet", repo_url, str(repo_path)],
+                    check=True,
+                    timeout=1200
+                )
+                return True
+            except Exception as e:
+                print(f"Warning: Clone failed for {repo_name}: {e}")
+        shutil.rmtree(repo_path, ignore_errors=True)
+        return False
 
 
 def main():
@@ -116,13 +124,17 @@ def main():
             print("No repositories found!")
             sys.exit(1)
 
-        success_count = 0
+        failed_repos = []
         for i, repo_name in enumerate(repos, 1):
-            if clone_or_update_repo(repo_name, i, len(repos)):
-                success_count += 1
+            if not clone_or_update_repo(repo_name, i, len(repos)):
+                failed_repos.append(repo_name)
 
         print(f"\n=== Repository download complete ===")
-        print(f"Successfully processed {success_count}/{len(repos)} repositories")
+        print(f"Successfully processed {len(repos) - len(failed_repos)}/{len(repos)} repositories")
+        if failed_repos:
+            print(f"Failed: {', '.join(failed_repos)}")
+            print("Stopping rather than publishing partial data.")
+            sys.exit(1)
     else:
         print("=== Skipping repository download (--update-only) ===")
 
